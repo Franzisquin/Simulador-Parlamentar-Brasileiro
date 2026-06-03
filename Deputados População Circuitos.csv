@@ -1,0 +1,114 @@
+﻿estado,id_local,populacao,nome_distrito
+Rondônia,1,1581196.0,Rondônia
+Acre,1,830018.0,Acre
+Amazonas,1,860724.0,São Gabriel
+Amazonas,2,1016914.0,Parintins
+Amazonas,3,2063975.0,Manaus
+Roraima,1,636707.0,Roraima
+Pará,1,1387061.0,Tapajós
+Pará,2,1396577.0,Marajó
+Pará,3,1644464.0,Carajás
+Pará,4,1796912.0,Grão-Pará
+Pará,5,1893460.0,Belém
+Amapá,1,733759.0,Amapá
+Tocantins,1,1511460.0,Tocantins
+Maranhão,1,1326130.0,Imperatriz
+Maranhão,2,1699141.0,Caxias
+Maranhão,3,1627579.0,São Luís
+Maranhão,4,2123849.0,Santa Inês
+Piauí,1,1790743.0,Teresina
+Piauí,2,1480456.0,Gurguéia
+Ceará,1,1341672.0,Quixadá
+Ceará,2,1808570.0,Cariri
+Ceará,3,1733950.0,Sobral
+Ceará,4,1495072.0,Metrop. de Fortaleza
+Ceará,5,2415693.0,Fortaleza
+Rio Grande do Norte,1,1270405.0,Mossoró
+Rio Grande do Norte,2,2032324.0,Natal
+Paraíba,1,1223955.0,Agreste
+Paraíba,2,1149319.0,Patos
+Paraíba,3,1601413.0,João Pessoa
+Pernambuco,1,1627738.0,Caruaru
+Pernambuco,2,1535464.0,Olinda
+Pernambuco,3,1319712.0,Petrolina
+Pernambuco,4,1346842.0,Borborema
+Pernambuco,5,1742990.0,Guararapes
+Pernambuco,6,1486185.0,Recife
+Alagoas,1,1593586.0,Maceió
+Alagoas,2,1534092.0,Arapiraca
+Sergipe,1,2210004.0,Sergipe
+Bahia,1,1670180.0,Barreiras
+Bahia,2,1698889.0,Conquista
+Bahia,3,1923125.0,São Francisco
+Bahia,4,1594215.0,Ilhéus
+Bahia,5,1715416.0,Jequié
+Bahia,6,1590580.0,Feira de Santana
+Bahia,7,1529120.0,Camaçari
+Bahia,8,2419780.0,Salvador
+Minas Gerais,1,1325257.0,Patos-Unaí
+Minas Gerais,2,1736958.0,Triângulo Mineiro
+Minas Gerais,3,2125743.0,Rio Doce
+Minas Gerais,4,2913059.0,Rio Grande
+Minas Gerais,5,1466342.0,Sete Lagoas
+Minas Gerais,6,2808174.0,Juiz de Fora
+Minas Gerais,7,1309781.0,Divinópolis
+Minas Gerais,8,1557247.0,Contagem
+Minas Gerais,9,1476512.0,Jequitinhonha
+Minas Gerais,10,2321834.0,Belo Horizonte
+Minas Gerais,11,1499082.0,Montes Claros
+Espírito Santo,1,1886764.0,Itapemirim-Linhares
+Espírito Santo,2,1946948.0,Vitória
+Rio de Janeiro,1,3053506.0,Baixada Fluminense
+Rio de Janeiro,2,2226494.0,Niterói
+Rio de Janeiro,3,2350999.0,Irajá
+Rio de Janeiro,4,1480392.0,Volta Redonda
+Rio de Janeiro,5,1248674.0,Petrópolis
+Rio de Janeiro,6,1823718.0,Macaé
+Rio de Janeiro,7,2710070.0,Santa Cruz
+Rio de Janeiro,8,1165118.0,São Sebastião
+São Paulo,1,3789294.0,São Paulo Leste
+São Paulo,2,2505926.0,Vale do Paraíba
+São Paulo,3,2083383.0,Santos
+São Paulo,4,2005654.0,Sorocaba
+São Paulo,5,2410712.0,São Paulo Sul
+São Paulo,6,2709814.0,São Bernardo
+São Paulo,7,1127501.0,Itapecerica
+São Paulo,8,2527449.0,Osasco
+São Paulo,9,2030123.0,Rio Preto
+São Paulo,10,2226944.0,São Paulo Norte
+São Paulo,11,2060700.0,Araçatuba
+São Paulo,12,3020022.0,São Paulo Centro
+São Paulo,13,4020111.0,Campinas
+São Paulo,14,1645015.0,Bauru
+São Paulo,15,1425482.0,São Carlos
+São Paulo,16,1871442.0,Ribeirão Preto
+São Paulo,17,1130884.0,Paranapanema
+São Paulo,18,1430134.0,Serra Negra
+São Paulo,19,1473005.0,Piracicaba
+São Paulo,20,2919109.0,Mogi das Cruzes
+Paraná,1,1923889.0,Maringá
+Paraná,2,1187986.0,Guarapuava
+Paraná,3,1658051.0,Ponta Grossa
+Paraná,4,1805361.0,Londrina
+Paraná,5,1403035.0,Iguaçu
+Paraná,6,1759159.0,Curitiba
+Paraná,7,1706887.0,Paranaguá
+Santa Catarina,1,1788534.0,Chapecó
+Santa Catarina,2,2289809.0,Florianópolis
+Santa Catarina,3,3532018.0,Joinville
+Rio Grande do Sul,1,1538778.0,Santa Maria
+Rio Grande do Sul,2,1753690.0,Passo Fundo
+Rio Grande do Sul,3,1911615.0,Caxias do Sul
+Rio Grande do Sul,4,1920672.0,Campanha
+Rio Grande do Sul,5,1744272.0,Porto Alegre
+Rio Grande do Sul,6,2013938.0,Vale do Sinos
+Mato Grosso do Sul,1,1110446.0,Corumbá
+Mato Grosso do Sul,2,1646567.0,Campo Grande
+Mato Grosso,1,1304839.0,Araguaia
+Mato Grosso,2,1246518.0,Rio Verde
+Mato Grosso,3,1107292.0,Cuiabá
+Goiás,1,1486763.0,Rio Verde
+Goiás,2,1971948.0,Anápolis
+Goiás,3,1630579.0,Formosa
+Goiás,4,1967205.0,Goiânia
+Distrito Federal,1,2817381.0,Brasília

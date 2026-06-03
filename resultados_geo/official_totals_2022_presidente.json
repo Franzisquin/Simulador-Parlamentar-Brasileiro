@@ -1,0 +1,1730 @@
+{
+    "AC": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 440917
+            },
+            "coalitions": [
+                {
+                    "id": "PDT",
+                    "raw_comp": "PDT",
+                    "votes": 12314
+                },
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 129022
+                },
+                {
+                    "id": "PTB",
+                    "raw_comp": "PTB",
+                    "votes": 279
+                },
+                {
+                    "id": "MDB",
+                    "raw_comp": "MDB",
+                    "votes": 20122
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 144
+                },
+                {
+                    "id": "PL",
+                    "raw_comp": "PL",
+                    "votes": 275582
+                },
+                {
+                    "id": "NOVO",
+                    "raw_comp": "NOVO",
+                    "votes": 825
+                },
+                {
+                    "id": "UNIÃO",
+                    "raw_comp": "UNIÃO",
+                    "votes": 2444
+                },
+                {
+                    "id": "DC",
+                    "raw_comp": "DC",
+                    "votes": 44
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 77
+                },
+                {
+                    "id": "UP",
+                    "raw_comp": "UP",
+                    "votes": 64
+                }
+            ]
+        }
+    },
+    "AL": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 1724217
+            },
+            "coalitions": [
+                {
+                    "id": "PDT",
+                    "raw_comp": "PDT",
+                    "votes": 43542
+                },
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 974156
+                },
+                {
+                    "id": "PTB",
+                    "raw_comp": "PTB",
+                    "votes": 3020
+                },
+                {
+                    "id": "MDB",
+                    "raw_comp": "MDB",
+                    "votes": 67411
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 325
+                },
+                {
+                    "id": "PL",
+                    "raw_comp": "PL",
+                    "votes": 621515
+                },
+                {
+                    "id": "DC",
+                    "raw_comp": "DC",
+                    "votes": 139
+                },
+                {
+                    "id": "NOVO",
+                    "raw_comp": "NOVO",
+                    "votes": 2450
+                },
+                {
+                    "id": "UNIÃO",
+                    "raw_comp": "UNIÃO",
+                    "votes": 10683
+                },
+                {
+                    "id": "UP",
+                    "raw_comp": "UP",
+                    "votes": 482
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 494
+                }
+            ]
+        }
+    },
+    "AM": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 2056676
+            },
+            "coalitions": [
+                {
+                    "id": "PDT",
+                    "raw_comp": "PDT",
+                    "votes": 44527
+                },
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 1019684
+                },
+                {
+                    "id": "PTB",
+                    "raw_comp": "PTB",
+                    "votes": 1373
+                },
+                {
+                    "id": "MDB",
+                    "raw_comp": "MDB",
+                    "votes": 87060
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 393
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 476
+                },
+                {
+                    "id": "PL",
+                    "raw_comp": "PL",
+                    "votes": 880198
+                },
+                {
+                    "id": "DC",
+                    "raw_comp": "DC",
+                    "votes": 267
+                },
+                {
+                    "id": "NOVO",
+                    "raw_comp": "NOVO",
+                    "votes": 5212
+                },
+                {
+                    "id": "UNIÃO",
+                    "raw_comp": "UNIÃO",
+                    "votes": 17002
+                },
+                {
+                    "id": "UP",
+                    "raw_comp": "UP",
+                    "votes": 484
+                }
+            ]
+        }
+    },
+    "AP": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 432161
+            },
+            "coalitions": [
+                {
+                    "id": "PDT",
+                    "raw_comp": "PDT",
+                    "votes": 14670
+                },
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 197382
+                },
+                {
+                    "id": "PL",
+                    "raw_comp": "PL",
+                    "votes": 187621
+                },
+                {
+                    "id": "MDB",
+                    "raw_comp": "MDB",
+                    "votes": 27497
+                },
+                {
+                    "id": "UNIÃO",
+                    "raw_comp": "UNIÃO",
+                    "votes": 2955
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 130
+                },
+                {
+                    "id": "PTB",
+                    "raw_comp": "PTB",
+                    "votes": 359
+                },
+                {
+                    "id": "NOVO",
+                    "raw_comp": "NOVO",
+                    "votes": 1236
+                },
+                {
+                    "id": "DC",
+                    "raw_comp": "DC",
+                    "votes": 62
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 144
+                },
+                {
+                    "id": "UP",
+                    "raw_comp": "UP",
+                    "votes": 105
+                }
+            ]
+        }
+    },
+    "BA": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 8423008
+            },
+            "coalitions": [
+                {
+                    "id": "PDT",
+                    "raw_comp": "PDT",
+                    "votes": 217224
+                },
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 5873081
+                },
+                {
+                    "id": "MDB",
+                    "raw_comp": "MDB",
+                    "votes": 197305
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 1148
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 2423
+                },
+                {
+                    "id": "PL",
+                    "raw_comp": "PL",
+                    "votes": 2047599
+                },
+                {
+                    "id": "NOVO",
+                    "raw_comp": "NOVO",
+                    "votes": 11605
+                },
+                {
+                    "id": "UNIÃO",
+                    "raw_comp": "UNIÃO",
+                    "votes": 65046
+                },
+                {
+                    "id": "UP",
+                    "raw_comp": "UP",
+                    "votes": 1926
+                },
+                {
+                    "id": "PTB",
+                    "raw_comp": "PTB",
+                    "votes": 4898
+                },
+                {
+                    "id": "DC",
+                    "raw_comp": "DC",
+                    "votes": 753
+                }
+            ]
+        }
+    },
+    "CE": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 5429264
+            },
+            "coalitions": [
+                {
+                    "id": "PDT",
+                    "raw_comp": "PDT",
+                    "votes": 369222
+                },
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 3578355
+                },
+                {
+                    "id": "PTB",
+                    "raw_comp": "PTB",
+                    "votes": 2278
+                },
+                {
+                    "id": "MDB",
+                    "raw_comp": "MDB",
+                    "votes": 66214
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 717
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 1579
+                },
+                {
+                    "id": "PL",
+                    "raw_comp": "PL",
+                    "votes": 1377827
+                },
+                {
+                    "id": "DC",
+                    "raw_comp": "DC",
+                    "votes": 416
+                },
+                {
+                    "id": "NOVO",
+                    "raw_comp": "NOVO",
+                    "votes": 7030
+                },
+                {
+                    "id": "UNIÃO",
+                    "raw_comp": "UNIÃO",
+                    "votes": 24497
+                },
+                {
+                    "id": "UP",
+                    "raw_comp": "UP",
+                    "votes": 1129
+                }
+            ]
+        }
+    },
+    "DF": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 1762575
+            },
+            "coalitions": [
+                {
+                    "id": "PDT",
+                    "raw_comp": "PDT",
+                    "votes": 74308
+                },
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 649534
+                },
+                {
+                    "id": "MDB",
+                    "raw_comp": "MDB",
+                    "votes": 105377
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 894
+                },
+                {
+                    "id": "PL",
+                    "raw_comp": "PL",
+                    "votes": 910397
+                },
+                {
+                    "id": "DC",
+                    "raw_comp": "DC",
+                    "votes": 518
+                },
+                {
+                    "id": "NOVO",
+                    "raw_comp": "NOVO",
+                    "votes": 10342
+                },
+                {
+                    "id": "UNIÃO",
+                    "raw_comp": "UNIÃO",
+                    "votes": 7935
+                },
+                {
+                    "id": "PTB",
+                    "raw_comp": "PTB",
+                    "votes": 1554
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 454
+                },
+                {
+                    "id": "UP",
+                    "raw_comp": "UP",
+                    "votes": 1262
+                }
+            ]
+        }
+    },
+    "ES": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 2221130
+            },
+            "coalitions": [
+                {
+                    "id": "PDT",
+                    "raw_comp": "PDT",
+                    "votes": 56221
+                },
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 897348
+                },
+                {
+                    "id": "PTB",
+                    "raw_comp": "PTB",
+                    "votes": 1752
+                },
+                {
+                    "id": "MDB",
+                    "raw_comp": "MDB",
+                    "votes": 85325
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 437
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 683
+                },
+                {
+                    "id": "PL",
+                    "raw_comp": "PL",
+                    "votes": 1160030
+                },
+                {
+                    "id": "DC",
+                    "raw_comp": "DC",
+                    "votes": 377
+                },
+                {
+                    "id": "NOVO",
+                    "raw_comp": "NOVO",
+                    "votes": 8341
+                },
+                {
+                    "id": "UNIÃO",
+                    "raw_comp": "UNIÃO",
+                    "votes": 9944
+                },
+                {
+                    "id": "UP",
+                    "raw_comp": "UP",
+                    "votes": 672
+                }
+            ]
+        }
+    },
+    "GO": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 3681469
+            },
+            "coalitions": [
+                {
+                    "id": "PDT",
+                    "raw_comp": "PDT",
+                    "votes": 90695
+                },
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 1454723
+                },
+                {
+                    "id": "PTB",
+                    "raw_comp": "PTB",
+                    "votes": 2303
+                },
+                {
+                    "id": "MDB",
+                    "raw_comp": "MDB",
+                    "votes": 170742
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 498
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 1073
+                },
+                {
+                    "id": "PL",
+                    "raw_comp": "PL",
+                    "votes": 1920203
+                },
+                {
+                    "id": "NOVO",
+                    "raw_comp": "NOVO",
+                    "votes": 11145
+                },
+                {
+                    "id": "UNIÃO",
+                    "raw_comp": "UNIÃO",
+                    "votes": 28570
+                },
+                {
+                    "id": "UP",
+                    "raw_comp": "UP",
+                    "votes": 1120
+                },
+                {
+                    "id": "DC",
+                    "raw_comp": "DC",
+                    "votes": 397
+                }
+            ]
+        }
+    },
+    "MA": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 3781645
+            },
+            "coalitions": [
+                {
+                    "id": "PDT",
+                    "raw_comp": "PDT",
+                    "votes": 96095
+                },
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 2603454
+                },
+                {
+                    "id": "PTB",
+                    "raw_comp": "PTB",
+                    "votes": 4357
+                },
+                {
+                    "id": "MDB",
+                    "raw_comp": "MDB",
+                    "votes": 78254
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 799
+                },
+                {
+                    "id": "PL",
+                    "raw_comp": "PL",
+                    "votes": 983861
+                },
+                {
+                    "id": "DC",
+                    "raw_comp": "DC",
+                    "votes": 391
+                },
+                {
+                    "id": "NOVO",
+                    "raw_comp": "NOVO",
+                    "votes": 4368
+                },
+                {
+                    "id": "UNIÃO",
+                    "raw_comp": "UNIÃO",
+                    "votes": 8709
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 727
+                },
+                {
+                    "id": "UP",
+                    "raw_comp": "UP",
+                    "votes": 630
+                }
+            ]
+        }
+    },
+    "MG": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 12016633
+            },
+            "coalitions": [
+                {
+                    "id": "PDT",
+                    "raw_comp": "PDT",
+                    "votes": 310324
+                },
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 5802571
+                },
+                {
+                    "id": "MDB",
+                    "raw_comp": "MDB",
+                    "votes": 500658
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 4431
+                },
+                {
+                    "id": "PL",
+                    "raw_comp": "PL",
+                    "votes": 5239264
+                },
+                {
+                    "id": "NOVO",
+                    "raw_comp": "NOVO",
+                    "votes": 98526
+                },
+                {
+                    "id": "UNIÃO",
+                    "raw_comp": "UNIÃO",
+                    "votes": 44109
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 2612
+                },
+                {
+                    "id": "UP",
+                    "raw_comp": "UP",
+                    "votes": 5241
+                },
+                {
+                    "id": "PTB",
+                    "raw_comp": "PTB",
+                    "votes": 7309
+                },
+                {
+                    "id": "DC",
+                    "raw_comp": "DC",
+                    "votes": 1588
+                }
+            ]
+        }
+    },
+    "MS": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 1506989
+            },
+            "coalitions": [
+                {
+                    "id": "PDT",
+                    "raw_comp": "PDT",
+                    "votes": 29314
+                },
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 588323
+                },
+                {
+                    "id": "PTB",
+                    "raw_comp": "PTB",
+                    "votes": 1057
+                },
+                {
+                    "id": "MDB",
+                    "raw_comp": "MDB",
+                    "votes": 79719
+                },
+                {
+                    "id": "PL",
+                    "raw_comp": "PL",
+                    "votes": 794206
+                },
+                {
+                    "id": "NOVO",
+                    "raw_comp": "NOVO",
+                    "votes": 5193
+                },
+                {
+                    "id": "UNIÃO",
+                    "raw_comp": "UNIÃO",
+                    "votes": 8082
+                },
+                {
+                    "id": "UP",
+                    "raw_comp": "UP",
+                    "votes": 350
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 222
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 371
+                },
+                {
+                    "id": "DC",
+                    "raw_comp": "DC",
+                    "votes": 152
+                }
+            ]
+        }
+    },
+    "MT": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 1842888
+            },
+            "coalitions": [
+                {
+                    "id": "PDT",
+                    "raw_comp": "PDT",
+                    "votes": 29437
+                },
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 633748
+                },
+                {
+                    "id": "MDB",
+                    "raw_comp": "MDB",
+                    "votes": 55989
+                },
+                {
+                    "id": "PL",
+                    "raw_comp": "PL",
+                    "votes": 1102866
+                },
+                {
+                    "id": "NOVO",
+                    "raw_comp": "NOVO",
+                    "votes": 4371
+                },
+                {
+                    "id": "UNIÃO",
+                    "raw_comp": "UNIÃO",
+                    "votes": 12715
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 406
+                },
+                {
+                    "id": "UP",
+                    "raw_comp": "UP",
+                    "votes": 366
+                },
+                {
+                    "id": "PTB",
+                    "raw_comp": "PTB",
+                    "votes": 2545
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 250
+                },
+                {
+                    "id": "DC",
+                    "raw_comp": "DC",
+                    "votes": 195
+                }
+            ]
+        }
+    },
+    "PA": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 4679936
+            },
+            "coalitions": [
+                {
+                    "id": "PDT",
+                    "raw_comp": "PDT",
+                    "votes": 116057
+                },
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 2443730
+                },
+                {
+                    "id": "PTB",
+                    "raw_comp": "PTB",
+                    "votes": 2783
+                },
+                {
+                    "id": "MDB",
+                    "raw_comp": "MDB",
+                    "votes": 204075
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 918
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 920
+                },
+                {
+                    "id": "PL",
+                    "raw_comp": "PL",
+                    "votes": 1884673
+                },
+                {
+                    "id": "DC",
+                    "raw_comp": "DC",
+                    "votes": 349
+                },
+                {
+                    "id": "NOVO",
+                    "raw_comp": "NOVO",
+                    "votes": 6130
+                },
+                {
+                    "id": "UNIÃO",
+                    "raw_comp": "UNIÃO",
+                    "votes": 19297
+                },
+                {
+                    "id": "UP",
+                    "raw_comp": "UP",
+                    "votes": 1004
+                }
+            ]
+        }
+    },
+    "PB": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 2421688
+            },
+            "coalitions": [
+                {
+                    "id": "PDT",
+                    "raw_comp": "PDT",
+                    "votes": 76225
+                },
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 1554868
+                },
+                {
+                    "id": "MDB",
+                    "raw_comp": "MDB",
+                    "votes": 57154
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 634
+                },
+                {
+                    "id": "PL",
+                    "raw_comp": "PL",
+                    "votes": 717416
+                },
+                {
+                    "id": "NOVO",
+                    "raw_comp": "NOVO",
+                    "votes": 3996
+                },
+                {
+                    "id": "UNIÃO",
+                    "raw_comp": "UNIÃO",
+                    "votes": 8713
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 332
+                },
+                {
+                    "id": "UP",
+                    "raw_comp": "UP",
+                    "votes": 578
+                },
+                {
+                    "id": "PTB",
+                    "raw_comp": "PTB",
+                    "votes": 1489
+                },
+                {
+                    "id": "DC",
+                    "raw_comp": "DC",
+                    "votes": 283
+                }
+            ]
+        }
+    },
+    "PE": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 5452009
+            },
+            "coalitions": [
+                {
+                    "id": "PDT",
+                    "raw_comp": "PDT",
+                    "votes": 130015
+                },
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 3558322
+                },
+                {
+                    "id": "PTB",
+                    "raw_comp": "PTB",
+                    "votes": 2991
+                },
+                {
+                    "id": "MDB",
+                    "raw_comp": "MDB",
+                    "votes": 96570
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 765
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 1419
+                },
+                {
+                    "id": "PL",
+                    "raw_comp": "PL",
+                    "votes": 1630938
+                },
+                {
+                    "id": "NOVO",
+                    "raw_comp": "NOVO",
+                    "votes": 8633
+                },
+                {
+                    "id": "UNIÃO",
+                    "raw_comp": "UNIÃO",
+                    "votes": 20686
+                },
+                {
+                    "id": "UP",
+                    "raw_comp": "UP",
+                    "votes": 1214
+                },
+                {
+                    "id": "DC",
+                    "raw_comp": "DC",
+                    "votes": 456
+                }
+            ]
+        }
+    },
+    "PI": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 2044386
+            },
+            "coalitions": [
+                {
+                    "id": "PDT",
+                    "raw_comp": "PDT",
+                    "votes": 59321
+                },
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 1518008
+                },
+                {
+                    "id": "MDB",
+                    "raw_comp": "MDB",
+                    "votes": 42179
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 317
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 427
+                },
+                {
+                    "id": "PL",
+                    "raw_comp": "PL",
+                    "votes": 406897
+                },
+                {
+                    "id": "NOVO",
+                    "raw_comp": "NOVO",
+                    "votes": 2562
+                },
+                {
+                    "id": "UNIÃO",
+                    "raw_comp": "UNIÃO",
+                    "votes": 13053
+                },
+                {
+                    "id": "PTB",
+                    "raw_comp": "PTB",
+                    "votes": 1122
+                },
+                {
+                    "id": "UP",
+                    "raw_comp": "UP",
+                    "votes": 350
+                },
+                {
+                    "id": "DC",
+                    "raw_comp": "DC",
+                    "votes": 150
+                }
+            ]
+        }
+    },
+    "PR": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 6566764
+            },
+            "coalitions": [
+                {
+                    "id": "PDT",
+                    "raw_comp": "PDT",
+                    "votes": 180599
+                },
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 2363492
+                },
+                {
+                    "id": "PTB",
+                    "raw_comp": "PTB",
+                    "votes": 5161
+                },
+                {
+                    "id": "MDB",
+                    "raw_comp": "MDB",
+                    "votes": 309685
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 2744
+                },
+                {
+                    "id": "PL",
+                    "raw_comp": "PL",
+                    "votes": 3628612
+                },
+                {
+                    "id": "NOVO",
+                    "raw_comp": "NOVO",
+                    "votes": 37983
+                },
+                {
+                    "id": "UNIÃO",
+                    "raw_comp": "UNIÃO",
+                    "votes": 34125
+                },
+                {
+                    "id": "UP",
+                    "raw_comp": "UP",
+                    "votes": 2089
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 1170
+                },
+                {
+                    "id": "DC",
+                    "raw_comp": "DC",
+                    "votes": 1104
+                }
+            ]
+        }
+    },
+    "RJ": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 9456677
+            },
+            "coalitions": [
+                {
+                    "id": "PDT",
+                    "raw_comp": "PDT",
+                    "votes": 301489
+                },
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 3847143
+                },
+                {
+                    "id": "PTB",
+                    "raw_comp": "PTB",
+                    "votes": 7760
+                },
+                {
+                    "id": "MDB",
+                    "raw_comp": "MDB",
+                    "votes": 365969
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 2643
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 4458
+                },
+                {
+                    "id": "PL",
+                    "raw_comp": "PL",
+                    "votes": 4831246
+                },
+                {
+                    "id": "DC",
+                    "raw_comp": "DC",
+                    "votes": 1546
+                },
+                {
+                    "id": "NOVO",
+                    "raw_comp": "NOVO",
+                    "votes": 43091
+                },
+                {
+                    "id": "UNIÃO",
+                    "raw_comp": "UNIÃO",
+                    "votes": 44252
+                },
+                {
+                    "id": "UP",
+                    "raw_comp": "UP",
+                    "votes": 7080
+                }
+            ]
+        }
+    },
+    "RN": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 2007264
+            },
+            "coalitions": [
+                {
+                    "id": "PDT",
+                    "raw_comp": "PDT",
+                    "votes": 71740
+                },
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 1264179
+                },
+                {
+                    "id": "MDB",
+                    "raw_comp": "MDB",
+                    "votes": 38633
+                },
+                {
+                    "id": "PL",
+                    "raw_comp": "PL",
+                    "votes": 622731
+                },
+                {
+                    "id": "UNIÃO",
+                    "raw_comp": "UNIÃO",
+                    "votes": 4326
+                },
+                {
+                    "id": "UP",
+                    "raw_comp": "UP",
+                    "votes": 587
+                },
+                {
+                    "id": "PTB",
+                    "raw_comp": "PTB",
+                    "votes": 860
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 422
+                },
+                {
+                    "id": "NOVO",
+                    "raw_comp": "NOVO",
+                    "votes": 2937
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 606
+                },
+                {
+                    "id": "DC",
+                    "raw_comp": "DC",
+                    "votes": 243
+                }
+            ]
+        }
+    },
+    "RO": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 903235
+            },
+            "coalitions": [
+                {
+                    "id": "PDT",
+                    "raw_comp": "PDT",
+                    "votes": 19353
+                },
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 261749
+                },
+                {
+                    "id": "MDB",
+                    "raw_comp": "MDB",
+                    "votes": 31217
+                },
+                {
+                    "id": "PL",
+                    "raw_comp": "PL",
+                    "votes": 581306
+                },
+                {
+                    "id": "DC",
+                    "raw_comp": "DC",
+                    "votes": 111
+                },
+                {
+                    "id": "NOVO",
+                    "raw_comp": "NOVO",
+                    "votes": 2398
+                },
+                {
+                    "id": "UNIÃO",
+                    "raw_comp": "UNIÃO",
+                    "votes": 5777
+                },
+                {
+                    "id": "PTB",
+                    "raw_comp": "PTB",
+                    "votes": 749
+                },
+                {
+                    "id": "UP",
+                    "raw_comp": "UP",
+                    "votes": 204
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 139
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 232
+                }
+            ]
+        }
+    },
+    "RR": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 298369
+            },
+            "coalitions": [
+                {
+                    "id": "PDT",
+                    "raw_comp": "PDT",
+                    "votes": 6709
+                },
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 68760
+                },
+                {
+                    "id": "PTB",
+                    "raw_comp": "PTB",
+                    "votes": 190
+                },
+                {
+                    "id": "MDB",
+                    "raw_comp": "MDB",
+                    "votes": 12956
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 75
+                },
+                {
+                    "id": "PL",
+                    "raw_comp": "PL",
+                    "votes": 207587
+                },
+                {
+                    "id": "NOVO",
+                    "raw_comp": "NOVO",
+                    "votes": 794
+                },
+                {
+                    "id": "UNIÃO",
+                    "raw_comp": "UNIÃO",
+                    "votes": 1138
+                },
+                {
+                    "id": "DC",
+                    "raw_comp": "DC",
+                    "votes": 37
+                },
+                {
+                    "id": "UP",
+                    "raw_comp": "UP",
+                    "votes": 59
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 64
+                }
+            ]
+        }
+    },
+    "RS": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 6637752
+            },
+            "coalitions": [
+                {
+                    "id": "PDT",
+                    "raw_comp": "PDT",
+                    "votes": 190945
+                },
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 2806672
+                },
+                {
+                    "id": "PTB",
+                    "raw_comp": "PTB",
+                    "votes": 4394
+                },
+                {
+                    "id": "MDB",
+                    "raw_comp": "MDB",
+                    "votes": 317957
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 2399
+                },
+                {
+                    "id": "PL",
+                    "raw_comp": "PL",
+                    "votes": 3245023
+                },
+                {
+                    "id": "NOVO",
+                    "raw_comp": "NOVO",
+                    "votes": 40601
+                },
+                {
+                    "id": "UNIÃO",
+                    "raw_comp": "UNIÃO",
+                    "votes": 25207
+                },
+                {
+                    "id": "UP",
+                    "raw_comp": "UP",
+                    "votes": 2332
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 1337
+                },
+                {
+                    "id": "DC",
+                    "raw_comp": "DC",
+                    "votes": 885
+                }
+            ]
+        }
+    },
+    "SC": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 4330984
+            },
+            "coalitions": [
+                {
+                    "id": "PDT",
+                    "raw_comp": "PDT",
+                    "votes": 88672
+                },
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 1279216
+                },
+                {
+                    "id": "PTB",
+                    "raw_comp": "PTB",
+                    "votes": 3369
+                },
+                {
+                    "id": "MDB",
+                    "raw_comp": "MDB",
+                    "votes": 191310
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 838
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 1812
+                },
+                {
+                    "id": "PL",
+                    "raw_comp": "PL",
+                    "votes": 2694406
+                },
+                {
+                    "id": "NOVO",
+                    "raw_comp": "NOVO",
+                    "votes": 48980
+                },
+                {
+                    "id": "UNIÃO",
+                    "raw_comp": "UNIÃO",
+                    "votes": 20132
+                },
+                {
+                    "id": "UP",
+                    "raw_comp": "UP",
+                    "votes": 1682
+                },
+                {
+                    "id": "DC",
+                    "raw_comp": "DC",
+                    "votes": 567
+                }
+            ]
+        }
+    },
+    "SE": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 1298432
+            },
+            "coalitions": [
+                {
+                    "id": "PDT",
+                    "raw_comp": "PDT",
+                    "votes": 40247
+                },
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 828716
+                },
+                {
+                    "id": "PTB",
+                    "raw_comp": "PTB",
+                    "votes": 631
+                },
+                {
+                    "id": "MDB",
+                    "raw_comp": "MDB",
+                    "votes": 42073
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 589
+                },
+                {
+                    "id": "PL",
+                    "raw_comp": "PL",
+                    "votes": 378610
+                },
+                {
+                    "id": "NOVO",
+                    "raw_comp": "NOVO",
+                    "votes": 2194
+                },
+                {
+                    "id": "UNIÃO",
+                    "raw_comp": "UNIÃO",
+                    "votes": 4416
+                },
+                {
+                    "id": "UP",
+                    "raw_comp": "UP",
+                    "votes": 396
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 364
+                },
+                {
+                    "id": "DC",
+                    "raw_comp": "DC",
+                    "votes": 196
+                }
+            ]
+        }
+    },
+    "SP": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 25656334
+            },
+            "coalitions": [
+                {
+                    "id": "PDT",
+                    "raw_comp": "PDT",
+                    "votes": 898540
+                },
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 10490032
+                },
+                {
+                    "id": "PTB",
+                    "raw_comp": "PTB",
+                    "votes": 15784
+                },
+                {
+                    "id": "MDB",
+                    "raw_comp": "MDB",
+                    "votes": 1625596
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 7450
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 14943
+                },
+                {
+                    "id": "PL",
+                    "raw_comp": "PL",
+                    "votes": 12239989
+                },
+                {
+                    "id": "DC",
+                    "raw_comp": "DC",
+                    "votes": 5015
+                },
+                {
+                    "id": "NOVO",
+                    "raw_comp": "NOVO",
+                    "votes": 183719
+                },
+                {
+                    "id": "UNIÃO",
+                    "raw_comp": "UNIÃO",
+                    "votes": 153601
+                },
+                {
+                    "id": "UP",
+                    "raw_comp": "UP",
+                    "votes": 21665
+                }
+            ]
+        }
+    },
+    "TO": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 861792
+            },
+            "coalitions": [
+                {
+                    "id": "PDT",
+                    "raw_comp": "PDT",
+                    "votes": 18141
+                },
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 434303
+                },
+                {
+                    "id": "PTB",
+                    "raw_comp": "PTB",
+                    "votes": 418
+                },
+                {
+                    "id": "MDB",
+                    "raw_comp": "MDB",
+                    "votes": 25209
+                },
+                {
+                    "id": "PL",
+                    "raw_comp": "PL",
+                    "votes": 379194
+                },
+                {
+                    "id": "NOVO",
+                    "raw_comp": "NOVO",
+                    "votes": 1266
+                },
+                {
+                    "id": "UNIÃO",
+                    "raw_comp": "UNIÃO",
+                    "votes": 2788
+                },
+                {
+                    "id": "UP",
+                    "raw_comp": "UP",
+                    "votes": 129
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 90
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 149
+                },
+                {
+                    "id": "DC",
+                    "raw_comp": "DC",
+                    "votes": 105
+                }
+            ]
+        }
+    }
+}

@@ -1,0 +1,6 @@
+ISO decoded as UTF-8: 'UNI�O'
+After upper: 'UNI�O'
+After non-ASCII strip: 'UNIO'
+UFFFD in s: True
+Char at pos 3: 0xfffd
+After explicit UFFFD replace: 'UNIO'

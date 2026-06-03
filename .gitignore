@@ -1,0 +1,4 @@
+# GeoJSON de distritos original (>100MB) — versionado dividido por estado em resultados_geo/distritos/
+resultados_geo/distritos_simulados.geojson
+
+node_modules/

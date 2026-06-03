@@ -1,0 +1,1730 @@
+{
+    "AC": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 399135
+            },
+            "coalitions": [
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 111641
+                },
+                {
+                    "id": "PSC",
+                    "raw_comp": "PSC",
+                    "votes": 1203
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 68
+                },
+                {
+                    "id": "PSDC",
+                    "raw_comp": "PSDC",
+                    "votes": 282
+                },
+                {
+                    "id": "PRTB",
+                    "raw_comp": "PRTB",
+                    "votes": 639
+                },
+                {
+                    "id": "PSB",
+                    "raw_comp": "PSB",
+                    "votes": 167603
+                },
+                {
+                    "id": "PV",
+                    "raw_comp": "PV",
+                    "votes": 597
+                },
+                {
+                    "id": "PSDB",
+                    "raw_comp": "PSDB",
+                    "votes": 116109
+                },
+                {
+                    "id": "PSOL",
+                    "raw_comp": "PSOL",
+                    "votes": 867
+                },
+                {
+                    "id": "PCO",
+                    "raw_comp": "PCO",
+                    "votes": 14
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 112
+                }
+            ]
+        }
+    },
+    "AL": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 1409536
+            },
+            "coalitions": [
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 703809
+                },
+                {
+                    "id": "PSC",
+                    "raw_comp": "PSC",
+                    "votes": 8413
+                },
+                {
+                    "id": "PRTB",
+                    "raw_comp": "PRTB",
+                    "votes": 7069
+                },
+                {
+                    "id": "PSB",
+                    "raw_comp": "PSB",
+                    "votes": 356803
+                },
+                {
+                    "id": "PV",
+                    "raw_comp": "PV",
+                    "votes": 3552
+                },
+                {
+                    "id": "PSDB",
+                    "raw_comp": "PSDB",
+                    "votes": 311830
+                },
+                {
+                    "id": "PSOL",
+                    "raw_comp": "PSOL",
+                    "votes": 15236
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 1197
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 892
+                },
+                {
+                    "id": "PSDC",
+                    "raw_comp": "PSDC",
+                    "votes": 610
+                },
+                {
+                    "id": "PCO",
+                    "raw_comp": "PCO",
+                    "votes": 125
+                }
+            ]
+        }
+    },
+    "AM": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 1679115
+            },
+            "coalitions": [
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 915299
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 1353
+                },
+                {
+                    "id": "PSC",
+                    "raw_comp": "PSC",
+                    "votes": 42697
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 545
+                },
+                {
+                    "id": "PSDC",
+                    "raw_comp": "PSDC",
+                    "votes": 621
+                },
+                {
+                    "id": "PRTB",
+                    "raw_comp": "PRTB",
+                    "votes": 10261
+                },
+                {
+                    "id": "PSB",
+                    "raw_comp": "PSB",
+                    "votes": 361632
+                },
+                {
+                    "id": "PV",
+                    "raw_comp": "PV",
+                    "votes": 4395
+                },
+                {
+                    "id": "PSDB",
+                    "raw_comp": "PSDB",
+                    "votes": 326257
+                },
+                {
+                    "id": "PSOL",
+                    "raw_comp": "PSOL",
+                    "votes": 15957
+                },
+                {
+                    "id": "PCO",
+                    "raw_comp": "PCO",
+                    "votes": 98
+                }
+            ]
+        }
+    },
+    "AP": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 389599
+            },
+            "coalitions": [
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 199016
+                },
+                {
+                    "id": "PSB",
+                    "raw_comp": "PSB",
+                    "votes": 77791
+                },
+                {
+                    "id": "PSDB",
+                    "raw_comp": "PSDB",
+                    "votes": 99125
+                },
+                {
+                    "id": "PSC",
+                    "raw_comp": "PSC",
+                    "votes": 5116
+                },
+                {
+                    "id": "PSDC",
+                    "raw_comp": "PSDC",
+                    "votes": 435
+                },
+                {
+                    "id": "PSOL",
+                    "raw_comp": "PSOL",
+                    "votes": 4008
+                },
+                {
+                    "id": "PRTB",
+                    "raw_comp": "PRTB",
+                    "votes": 1549
+                },
+                {
+                    "id": "PV",
+                    "raw_comp": "PV",
+                    "votes": 1254
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 1122
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 162
+                },
+                {
+                    "id": "PCO",
+                    "raw_comp": "PCO",
+                    "votes": 21
+                }
+            ]
+        }
+    },
+    "BA": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 6987943
+            },
+            "coalitions": [
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 4292850
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 3508
+                },
+                {
+                    "id": "PSC",
+                    "raw_comp": "PSC",
+                    "votes": 37194
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 2890
+                },
+                {
+                    "id": "PRTB",
+                    "raw_comp": "PRTB",
+                    "votes": 15336
+                },
+                {
+                    "id": "PSB",
+                    "raw_comp": "PSB",
+                    "votes": 1284711
+                },
+                {
+                    "id": "PV",
+                    "raw_comp": "PV",
+                    "votes": 15722
+                },
+                {
+                    "id": "PSDB",
+                    "raw_comp": "PSDB",
+                    "votes": 1277512
+                },
+                {
+                    "id": "PSOL",
+                    "raw_comp": "PSOL",
+                    "votes": 55837
+                },
+                {
+                    "id": "PCO",
+                    "raw_comp": "PCO",
+                    "votes": 555
+                },
+                {
+                    "id": "PSDC",
+                    "raw_comp": "PSDC",
+                    "votes": 1828
+                }
+            ]
+        }
+    },
+    "CE": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 4522185
+            },
+            "coalitions": [
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 3087658
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 4661
+                },
+                {
+                    "id": "PSC",
+                    "raw_comp": "PSC",
+                    "votes": 25749
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 1832
+                },
+                {
+                    "id": "PRTB",
+                    "raw_comp": "PRTB",
+                    "votes": 15971
+                },
+                {
+                    "id": "PSB",
+                    "raw_comp": "PSB",
+                    "votes": 638614
+                },
+                {
+                    "id": "PV",
+                    "raw_comp": "PV",
+                    "votes": 14094
+                },
+                {
+                    "id": "PSDB",
+                    "raw_comp": "PSDB",
+                    "votes": 677587
+                },
+                {
+                    "id": "PSOL",
+                    "raw_comp": "PSOL",
+                    "votes": 52484
+                },
+                {
+                    "id": "PSDC",
+                    "raw_comp": "PSDC",
+                    "votes": 3193
+                },
+                {
+                    "id": "PCO",
+                    "raw_comp": "PCO",
+                    "votes": 342
+                }
+            ]
+        }
+    },
+    "DF": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 1579692
+            },
+            "coalitions": [
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 363861
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 1495
+                },
+                {
+                    "id": "PSC",
+                    "raw_comp": "PSC",
+                    "votes": 10053
+                },
+                {
+                    "id": "PRTB",
+                    "raw_comp": "PRTB",
+                    "votes": 15270
+                },
+                {
+                    "id": "PSB",
+                    "raw_comp": "PSB",
+                    "votes": 565279
+                },
+                {
+                    "id": "PV",
+                    "raw_comp": "PV",
+                    "votes": 19478
+                },
+                {
+                    "id": "PSDB",
+                    "raw_comp": "PSDB",
+                    "votes": 570494
+                },
+                {
+                    "id": "PSOL",
+                    "raw_comp": "PSOL",
+                    "votes": 31435
+                },
+                {
+                    "id": "PSDC",
+                    "raw_comp": "PSDC",
+                    "votes": 1295
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 559
+                },
+                {
+                    "id": "PCO",
+                    "raw_comp": "PCO",
+                    "votes": 473
+                }
+            ]
+        }
+    },
+    "ES": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 1975322
+            },
+            "coalitions": [
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 653839
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 1313
+                },
+                {
+                    "id": "PSC",
+                    "raw_comp": "PSC",
+                    "votes": 16138
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 723
+                },
+                {
+                    "id": "PRTB",
+                    "raw_comp": "PRTB",
+                    "votes": 9021
+                },
+                {
+                    "id": "PSB",
+                    "raw_comp": "PSB",
+                    "votes": 567964
+                },
+                {
+                    "id": "PV",
+                    "raw_comp": "PV",
+                    "votes": 11875
+                },
+                {
+                    "id": "PSDB",
+                    "raw_comp": "PSDB",
+                    "votes": 694085
+                },
+                {
+                    "id": "PSOL",
+                    "raw_comp": "PSOL",
+                    "votes": 19016
+                },
+                {
+                    "id": "PCO",
+                    "raw_comp": "PCO",
+                    "votes": 215
+                },
+                {
+                    "id": "PSDC",
+                    "raw_comp": "PSDC",
+                    "votes": 1133
+                }
+            ]
+        }
+    },
+    "GO": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 3228160
+            },
+            "coalitions": [
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 1035911
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 1765
+                },
+                {
+                    "id": "PSC",
+                    "raw_comp": "PSC",
+                    "votes": 19005
+                },
+                {
+                    "id": "PSDC",
+                    "raw_comp": "PSDC",
+                    "votes": 1948
+                },
+                {
+                    "id": "PRTB",
+                    "raw_comp": "PRTB",
+                    "votes": 12393
+                },
+                {
+                    "id": "PSB",
+                    "raw_comp": "PSB",
+                    "votes": 771591
+                },
+                {
+                    "id": "PV",
+                    "raw_comp": "PV",
+                    "votes": 12259
+                },
+                {
+                    "id": "PSDB",
+                    "raw_comp": "PSDB",
+                    "votes": 1341320
+                },
+                {
+                    "id": "PSOL",
+                    "raw_comp": "PSOL",
+                    "votes": 30411
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 1256
+                },
+                {
+                    "id": "PCO",
+                    "raw_comp": "PCO",
+                    "votes": 301
+                }
+            ]
+        }
+    },
+    "MA": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 3145547
+            },
+            "coalitions": [
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 2187864
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 4340
+                },
+                {
+                    "id": "PSC",
+                    "raw_comp": "PSC",
+                    "votes": 22389
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 1151
+                },
+                {
+                    "id": "PSDC",
+                    "raw_comp": "PSDC",
+                    "votes": 2205
+                },
+                {
+                    "id": "PRTB",
+                    "raw_comp": "PRTB",
+                    "votes": 6707
+                },
+                {
+                    "id": "PSB",
+                    "raw_comp": "PSB",
+                    "votes": 535013
+                },
+                {
+                    "id": "PV",
+                    "raw_comp": "PV",
+                    "votes": 6965
+                },
+                {
+                    "id": "PSDB",
+                    "raw_comp": "PSDB",
+                    "votes": 365655
+                },
+                {
+                    "id": "PSOL",
+                    "raw_comp": "PSOL",
+                    "votes": 13100
+                },
+                {
+                    "id": "PCO",
+                    "raw_comp": "PCO",
+                    "votes": 158
+                }
+            ]
+        }
+    },
+    "MG": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 11112954
+            },
+            "coalitions": [
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 4830867
+                },
+                {
+                    "id": "PSC",
+                    "raw_comp": "PSC",
+                    "votes": 67486
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 5469
+                },
+                {
+                    "id": "PRTB",
+                    "raw_comp": "PRTB",
+                    "votes": 25939
+                },
+                {
+                    "id": "PSB",
+                    "raw_comp": "PSB",
+                    "votes": 1555553
+                },
+                {
+                    "id": "PV",
+                    "raw_comp": "PV",
+                    "votes": 54483
+                },
+                {
+                    "id": "PSDB",
+                    "raw_comp": "PSDB",
+                    "votes": 4417876
+                },
+                {
+                    "id": "PSOL",
+                    "raw_comp": "PSOL",
+                    "votes": 139889
+                },
+                {
+                    "id": "PSDC",
+                    "raw_comp": "PSDC",
+                    "votes": 5545
+                },
+                {
+                    "id": "PCO",
+                    "raw_comp": "PCO",
+                    "votes": 1489
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 8358
+                }
+            ]
+        }
+    },
+    "MS": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 1352208
+            },
+            "coalitions": [
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 507063
+                },
+                {
+                    "id": "PSC",
+                    "raw_comp": "PSC",
+                    "votes": 6977
+                },
+                {
+                    "id": "PSDC",
+                    "raw_comp": "PSDC",
+                    "votes": 478
+                },
+                {
+                    "id": "PRTB",
+                    "raw_comp": "PRTB",
+                    "votes": 4623
+                },
+                {
+                    "id": "PSB",
+                    "raw_comp": "PSB",
+                    "votes": 257976
+                },
+                {
+                    "id": "PV",
+                    "raw_comp": "PV",
+                    "votes": 4093
+                },
+                {
+                    "id": "PSDB",
+                    "raw_comp": "PSDB",
+                    "votes": 558826
+                },
+                {
+                    "id": "PSOL",
+                    "raw_comp": "PSOL",
+                    "votes": 10708
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 390
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 977
+                },
+                {
+                    "id": "PCO",
+                    "raw_comp": "PCO",
+                    "votes": 97
+                }
+            ]
+        }
+    },
+    "MT": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 1559619
+            },
+            "coalitions": [
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 616411
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 474
+                },
+                {
+                    "id": "PSC",
+                    "raw_comp": "PSC",
+                    "votes": 9129
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 529
+                },
+                {
+                    "id": "PSDC",
+                    "raw_comp": "PSDC",
+                    "votes": 470
+                },
+                {
+                    "id": "PRTB",
+                    "raw_comp": "PRTB",
+                    "votes": 4462
+                },
+                {
+                    "id": "PSB",
+                    "raw_comp": "PSB",
+                    "votes": 220067
+                },
+                {
+                    "id": "PV",
+                    "raw_comp": "PV",
+                    "votes": 4128
+                },
+                {
+                    "id": "PSDB",
+                    "raw_comp": "PSDB",
+                    "votes": 693755
+                },
+                {
+                    "id": "PSOL",
+                    "raw_comp": "PSOL",
+                    "votes": 10093
+                },
+                {
+                    "id": "PCO",
+                    "raw_comp": "PCO",
+                    "votes": 101
+                }
+            ]
+        }
+    },
+    "PA": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 3838783
+            },
+            "coalitions": [
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 2040981
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 3012
+                },
+                {
+                    "id": "PSC",
+                    "raw_comp": "PSC",
+                    "votes": 43068
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 833
+                },
+                {
+                    "id": "PRTB",
+                    "raw_comp": "PRTB",
+                    "votes": 11501
+                },
+                {
+                    "id": "PSB",
+                    "raw_comp": "PSB",
+                    "votes": 627319
+                },
+                {
+                    "id": "PV",
+                    "raw_comp": "PV",
+                    "votes": 12260
+                },
+                {
+                    "id": "PSDB",
+                    "raw_comp": "PSDB",
+                    "votes": 1058334
+                },
+                {
+                    "id": "PSOL",
+                    "raw_comp": "PSOL",
+                    "votes": 40353
+                },
+                {
+                    "id": "PSDC",
+                    "raw_comp": "PSDC",
+                    "votes": 915
+                },
+                {
+                    "id": "PCO",
+                    "raw_comp": "PCO",
+                    "votes": 207
+                }
+            ]
+        }
+    },
+    "PB": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 2098811
+            },
+            "coalitions": [
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 1166860
+                },
+                {
+                    "id": "PSC",
+                    "raw_comp": "PSC",
+                    "votes": 12102
+                },
+                {
+                    "id": "PRTB",
+                    "raw_comp": "PRTB",
+                    "votes": 7539
+                },
+                {
+                    "id": "PCO",
+                    "raw_comp": "PCO",
+                    "votes": 247
+                },
+                {
+                    "id": "PSB",
+                    "raw_comp": "PSB",
+                    "votes": 393685
+                },
+                {
+                    "id": "PV",
+                    "raw_comp": "PV",
+                    "votes": 7791
+                },
+                {
+                    "id": "PSDB",
+                    "raw_comp": "PSDB",
+                    "votes": 490962
+                },
+                {
+                    "id": "PSOL",
+                    "raw_comp": "PSOL",
+                    "votes": 16847
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 1071
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 796
+                },
+                {
+                    "id": "PSDC",
+                    "raw_comp": "PSDC",
+                    "votes": 911
+                }
+            ]
+        }
+    },
+    "PE": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 4810876
+            },
+            "coalitions": [
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 2127010
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 2760
+                },
+                {
+                    "id": "PSC",
+                    "raw_comp": "PSC",
+                    "votes": 15691
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 1719
+                },
+                {
+                    "id": "PSDC",
+                    "raw_comp": "PSDC",
+                    "votes": 1266
+                },
+                {
+                    "id": "PRTB",
+                    "raw_comp": "PRTB",
+                    "votes": 11498
+                },
+                {
+                    "id": "PCO",
+                    "raw_comp": "PCO",
+                    "votes": 322
+                },
+                {
+                    "id": "PSB",
+                    "raw_comp": "PSB",
+                    "votes": 2311491
+                },
+                {
+                    "id": "PV",
+                    "raw_comp": "PV",
+                    "votes": 13349
+                },
+                {
+                    "id": "PSDB",
+                    "raw_comp": "PSDB",
+                    "votes": 285315
+                },
+                {
+                    "id": "PSOL",
+                    "raw_comp": "PSOL",
+                    "votes": 40455
+                }
+            ]
+        }
+    },
+    "PI": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 1749876
+            },
+            "coalitions": [
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 1235337
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 1456
+                },
+                {
+                    "id": "PSC",
+                    "raw_comp": "PSC",
+                    "votes": 6284
+                },
+                {
+                    "id": "PSDC",
+                    "raw_comp": "PSDC",
+                    "votes": 752
+                },
+                {
+                    "id": "PRTB",
+                    "raw_comp": "PRTB",
+                    "votes": 2338
+                },
+                {
+                    "id": "PSB",
+                    "raw_comp": "PSB",
+                    "votes": 246271
+                },
+                {
+                    "id": "PV",
+                    "raw_comp": "PV",
+                    "votes": 4385
+                },
+                {
+                    "id": "PSDB",
+                    "raw_comp": "PSDB",
+                    "votes": 242256
+                },
+                {
+                    "id": "PSOL",
+                    "raw_comp": "PSOL",
+                    "votes": 10159
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 487
+                },
+                {
+                    "id": "PCO",
+                    "raw_comp": "PCO",
+                    "votes": 151
+                }
+            ]
+        }
+    },
+    "PR": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 6067868
+            },
+            "coalitions": [
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 1973421
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 4552
+                },
+                {
+                    "id": "PSC",
+                    "raw_comp": "PSC",
+                    "votes": 40656
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 2409
+                },
+                {
+                    "id": "PSDC",
+                    "raw_comp": "PSDC",
+                    "votes": 4828
+                },
+                {
+                    "id": "PRTB",
+                    "raw_comp": "PRTB",
+                    "votes": 33612
+                },
+                {
+                    "id": "PSB",
+                    "raw_comp": "PSB",
+                    "votes": 861820
+                },
+                {
+                    "id": "PV",
+                    "raw_comp": "PV",
+                    "votes": 44755
+                },
+                {
+                    "id": "PSDB",
+                    "raw_comp": "PSDB",
+                    "votes": 3021988
+                },
+                {
+                    "id": "PSOL",
+                    "raw_comp": "PSOL",
+                    "votes": 79267
+                },
+                {
+                    "id": "PCO",
+                    "raw_comp": "PCO",
+                    "votes": 560
+                }
+            ]
+        }
+    },
+    "RJ": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 8346514
+            },
+            "coalitions": [
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 2971736
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 14430
+                },
+                {
+                    "id": "PSC",
+                    "raw_comp": "PSC",
+                    "votes": 136163
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 8548
+                },
+                {
+                    "id": "PSDC",
+                    "raw_comp": "PSDC",
+                    "votes": 11754
+                },
+                {
+                    "id": "PRTB",
+                    "raw_comp": "PRTB",
+                    "votes": 65015
+                },
+                {
+                    "id": "PCO",
+                    "raw_comp": "PCO",
+                    "votes": 1450
+                },
+                {
+                    "id": "PSB",
+                    "raw_comp": "PSB",
+                    "votes": 2592292
+                },
+                {
+                    "id": "PV",
+                    "raw_comp": "PV",
+                    "votes": 68032
+                },
+                {
+                    "id": "PSDB",
+                    "raw_comp": "PSDB",
+                    "votes": 2249662
+                },
+                {
+                    "id": "PSOL",
+                    "raw_comp": "PSOL",
+                    "votes": 227432
+                }
+            ]
+        }
+    },
+    "RN": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 1664918
+            },
+            "coalitions": [
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 999625
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 2830
+                },
+                {
+                    "id": "PSC",
+                    "raw_comp": "PSC",
+                    "votes": 13316
+                },
+                {
+                    "id": "PSDC",
+                    "raw_comp": "PSDC",
+                    "votes": 929
+                },
+                {
+                    "id": "PRTB",
+                    "raw_comp": "PRTB",
+                    "votes": 5292
+                },
+                {
+                    "id": "PSB",
+                    "raw_comp": "PSB",
+                    "votes": 286301
+                },
+                {
+                    "id": "PV",
+                    "raw_comp": "PV",
+                    "votes": 5346
+                },
+                {
+                    "id": "PSDB",
+                    "raw_comp": "PSDB",
+                    "votes": 330264
+                },
+                {
+                    "id": "PSOL",
+                    "raw_comp": "PSOL",
+                    "votes": 20212
+                },
+                {
+                    "id": "PCO",
+                    "raw_comp": "PCO",
+                    "votes": 162
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 641
+                }
+            ]
+        }
+    },
+    "RO": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 828232
+            },
+            "coalitions": [
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 345305
+                },
+                {
+                    "id": "PSC",
+                    "raw_comp": "PSC",
+                    "votes": 12512
+                },
+                {
+                    "id": "PSB",
+                    "raw_comp": "PSB",
+                    "votes": 86293
+                },
+                {
+                    "id": "PV",
+                    "raw_comp": "PV",
+                    "votes": 2368
+                },
+                {
+                    "id": "PSDB",
+                    "raw_comp": "PSDB",
+                    "votes": 371937
+                },
+                {
+                    "id": "PSOL",
+                    "raw_comp": "PSOL",
+                    "votes": 4664
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 208
+                },
+                {
+                    "id": "PRTB",
+                    "raw_comp": "PRTB",
+                    "votes": 3819
+                },
+                {
+                    "id": "PSDC",
+                    "raw_comp": "PSDC",
+                    "votes": 634
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 429
+                },
+                {
+                    "id": "PCO",
+                    "raw_comp": "PCO",
+                    "votes": 63
+                }
+            ]
+        }
+    },
+    "RR": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 250016
+            },
+            "coalitions": [
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 82942
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 209
+                },
+                {
+                    "id": "PSC",
+                    "raw_comp": "PSC",
+                    "votes": 5194
+                },
+                {
+                    "id": "PSDC",
+                    "raw_comp": "PSDC",
+                    "votes": 515
+                },
+                {
+                    "id": "PRTB",
+                    "raw_comp": "PRTB",
+                    "votes": 1285
+                },
+                {
+                    "id": "PCO",
+                    "raw_comp": "PCO",
+                    "votes": 48
+                },
+                {
+                    "id": "PSB",
+                    "raw_comp": "PSB",
+                    "votes": 47087
+                },
+                {
+                    "id": "PV",
+                    "raw_comp": "PV",
+                    "votes": 780
+                },
+                {
+                    "id": "PSDB",
+                    "raw_comp": "PSDB",
+                    "votes": 109070
+                },
+                {
+                    "id": "PSOL",
+                    "raw_comp": "PSOL",
+                    "votes": 2815
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 71
+                }
+            ]
+        }
+    },
+    "RS": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 6371774
+            },
+            "coalitions": [
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 2752075
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 4083
+                },
+                {
+                    "id": "PSC",
+                    "raw_comp": "PSC",
+                    "votes": 33053
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 2301
+                },
+                {
+                    "id": "PRTB",
+                    "raw_comp": "PRTB",
+                    "votes": 17954
+                },
+                {
+                    "id": "PSB",
+                    "raw_comp": "PSB",
+                    "votes": 732828
+                },
+                {
+                    "id": "PV",
+                    "raw_comp": "PV",
+                    "votes": 43703
+                },
+                {
+                    "id": "PSDB",
+                    "raw_comp": "PSDB",
+                    "votes": 2639647
+                },
+                {
+                    "id": "PSOL",
+                    "raw_comp": "PSOL",
+                    "votes": 143370
+                },
+                {
+                    "id": "PSDC",
+                    "raw_comp": "PSDC",
+                    "votes": 2255
+                },
+                {
+                    "id": "PCO",
+                    "raw_comp": "PCO",
+                    "votes": 505
+                }
+            ]
+        }
+    },
+    "SC": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 3712293
+            },
+            "coalitions": [
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 1141102
+                },
+                {
+                    "id": "PSC",
+                    "raw_comp": "PSC",
+                    "votes": 23661
+                },
+                {
+                    "id": "PSDC",
+                    "raw_comp": "PSDC",
+                    "votes": 2005
+                },
+                {
+                    "id": "PRTB",
+                    "raw_comp": "PRTB",
+                    "votes": 15774
+                },
+                {
+                    "id": "PSB",
+                    "raw_comp": "PSB",
+                    "votes": 476430
+                },
+                {
+                    "id": "PV",
+                    "raw_comp": "PV",
+                    "votes": 30239
+                },
+                {
+                    "id": "PSDB",
+                    "raw_comp": "PSDB",
+                    "votes": 1963772
+                },
+                {
+                    "id": "PSOL",
+                    "raw_comp": "PSOL",
+                    "votes": 53532
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 3975
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 1413
+                },
+                {
+                    "id": "PCO",
+                    "raw_comp": "PCO",
+                    "votes": 390
+                }
+            ]
+        }
+    },
+    "SE": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 1095939
+            },
+            "coalitions": [
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 601740
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 1703
+                },
+                {
+                    "id": "PSC",
+                    "raw_comp": "PSC",
+                    "votes": 18776
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 764
+                },
+                {
+                    "id": "PRTB",
+                    "raw_comp": "PRTB",
+                    "votes": 3677
+                },
+                {
+                    "id": "PCO",
+                    "raw_comp": "PCO",
+                    "votes": 142
+                },
+                {
+                    "id": "PSB",
+                    "raw_comp": "PSB",
+                    "votes": 203390
+                },
+                {
+                    "id": "PV",
+                    "raw_comp": "PV",
+                    "votes": 3733
+                },
+                {
+                    "id": "PSDB",
+                    "raw_comp": "PSDB",
+                    "votes": 248756
+                },
+                {
+                    "id": "PSOL",
+                    "raw_comp": "PSOL",
+                    "votes": 12827
+                },
+                {
+                    "id": "PSDC",
+                    "raw_comp": "PSDC",
+                    "votes": 431
+                }
+            ]
+        }
+    },
+    "SP": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 22980372
+            },
+            "coalitions": [
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 5930661
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 19129
+                },
+                {
+                    "id": "PSC",
+                    "raw_comp": "PSC",
+                    "votes": 142842
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 10667
+                },
+                {
+                    "id": "PSDC",
+                    "raw_comp": "PSDC",
+                    "votes": 13510
+                },
+                {
+                    "id": "PRTB",
+                    "raw_comp": "PRTB",
+                    "votes": 136244
+                },
+                {
+                    "id": "PSB",
+                    "raw_comp": "PSB",
+                    "votes": 5765598
+                },
+                {
+                    "id": "PV",
+                    "raw_comp": "PV",
+                    "votes": 236966
+                },
+                {
+                    "id": "PSDB",
+                    "raw_comp": "PSDB",
+                    "votes": 10165921
+                },
+                {
+                    "id": "PSOL",
+                    "raw_comp": "PSOL",
+                    "votes": 554863
+                },
+                {
+                    "id": "PCO",
+                    "raw_comp": "PCO",
+                    "votes": 3971
+                }
+            ]
+        }
+    },
+    "TO": {
+        "f": {
+            "stats": {
+                "qt_votos_validos": 733776
+            },
+            "coalitions": [
+                {
+                    "id": "PT",
+                    "raw_comp": "PT",
+                    "votes": 368431
+                },
+                {
+                    "id": "PSC",
+                    "raw_comp": "PSC",
+                    "votes": 4740
+                },
+                {
+                    "id": "PRTB",
+                    "raw_comp": "PRTB",
+                    "votes": 1654
+                },
+                {
+                    "id": "PSB",
+                    "raw_comp": "PSB",
+                    "votes": 150690
+                },
+                {
+                    "id": "PV",
+                    "raw_comp": "PV",
+                    "votes": 1430
+                },
+                {
+                    "id": "PSDB",
+                    "raw_comp": "PSDB",
+                    "votes": 203183
+                },
+                {
+                    "id": "PSTU",
+                    "raw_comp": "PSTU",
+                    "votes": 247
+                },
+                {
+                    "id": "PSDC",
+                    "raw_comp": "PSDC",
+                    "votes": 221
+                },
+                {
+                    "id": "PSOL",
+                    "raw_comp": "PSOL",
+                    "votes": 2875
+                },
+                {
+                    "id": "PCB",
+                    "raw_comp": "PCB",
+                    "votes": 261
+                },
+                {
+                    "id": "PCO",
+                    "raw_comp": "PCO",
+                    "votes": 44
+                }
+            ]
+        }
+    }
+}

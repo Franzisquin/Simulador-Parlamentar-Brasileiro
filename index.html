@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Simulador Parlamentar - Brasil 2022</title>
+
+  <!-- CDNs -->
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+  <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
+  <script src="https://unpkg.com/unzipit@1.4.0/dist/unzipit.min.js"></script>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+
+  <!-- Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&family=Libre+Franklin:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css?v=20260602-3" />
+</head>
+
+<body data-theme="dark">
+  <!-- APP TOOLBAR -->
+  <div class="app-toolbar">
+    <div class="toolbar-left">
+      <span class="toolbar-page">Simulador Parlamentar Brasil 2022</span>
+    </div>
+    <div class="toolbar-right">
+    </div>
+  </div>
+
+  <!-- MAIN CONTAINER -->
+  <div class="app">
+    <!-- LEFT PANEL: CONFIGURATIONS -->
+    <div class="panel side side-left">
+      <div class="panel-header">
+        <h2 class="panel-title">Configurações Eleitorais</h2>
+      </div>
+      <div class="body">
+        
+        <!-- Nível de Eleição -->
+        <div class="config-section">
+          <h3>Nível de Eleição</h3>
+          <select id="selectElectionLevel" class="select">
+            <option value="nacional" selected>Nacional</option>
+            <option value="estadual">Estadual</option>
+          </select>
+        </div>
+
+        <!-- Seletor de Estado (visível apenas quando estadual) -->
+        <div class="config-section hidden" id="stateSelectionSection">
+          <h3>Estado</h3>
+          <select id="selectElectionState" class="select">
+            <option value="" disabled selected>Selecione um estado</option>
+            <option value="AC">Acre</option>
+            <option value="AL">Alagoas</option>
+            <option value="AM">Amazonas</option>
+            <option value="AP">Amapá</option>
+            <option value="BA">Bahia</option>
+            <option value="CE">Ceará</option>
+            <option value="DF">Distrito Federal</option>
+            <option value="ES">Espírito Santo</option>
+            <option value="GO">Goiás</option>
+            <option value="MA">Maranhão</option>
+            <option value="MG">Minas Gerais</option>
+            <option value="MS">Mato Grosso do Sul</option>
+            <option value="MT">Mato Grosso</option>
+            <option value="PA">Pará</option>
+            <option value="PB">Paraíba</option>
+            <option value="PE">Pernambuco</option>
+            <option value="PI">Piauí</option>
+            <option value="PR">Paraná</option>
+            <option value="RJ">Rio de Janeiro</option>
+            <option value="RN">Rio Grande do Norte</option>
+            <option value="RO">Rondônia</option>
+            <option value="RR">Roraima</option>
+            <option value="RS">Rio Grande do Sul</option>
+            <option value="SC">Santa Catarina</option>
+            <option value="SE">Sergipe</option>
+            <option value="SP">São Paulo</option>
+            <option value="TO">Tocantins</option>
+          </select>
+        </div>
+
+        <!-- Sistema Eleitoral (visível apenas no nacional) -->
+        <div class="config-section" id="systemTypeSection">
+          <h3>Sistema Eleitoral</h3>
+          <select id="selectSystemType" class="select">
+            <option value="proporcional" selected>Proporcional</option>
+            <option value="distrital">Distrital (Uninominal / Majoritário)</option>
+          </select>
+        </div>
+
+        <!-- Método de Distribuição -->
+        <div class="config-section proportional-only">
+          <h3>Método de Distribuição</h3>
+          <select id="selectCalcMethod" class="select">
+            <option value="dhondt" selected>D'Hondt</option>
+            <option value="saintlague">Saint-Laguë</option>
+            <option value="hare">Resto Maior</option>
+          </select>
+        </div>
+
+        <!-- Tipo de Circunscrição -->
+        <div class="config-section proportional-only" id="circumscriptionSection">
+          <h3>Tipo de Circunscrição</h3>
+          <select id="selectCircumscription" class="select">
+            <option value="nacional" id="optCircNacional">Nacional (circunscrição única)</option>
+            <option value="estadual" selected>Estadual (por estado)</option>
+            <option value="regional">Regional (circunscrições sub-estaduais)</option>
+          </select>
+        </div>
+
+        <!-- Distribuição das Cadeiras por Estado -->
+        <div class="config-section proportional-only" id="seatDistributionSection">
+          <h3 id="seatDistributionLabel">Distribuição de Cadeiras por Estado</h3>
+          <select id="selectSeatDistribution" class="select">
+            <optgroup label="Câmara dos Deputados">
+              <option value="real" selected>Realista (513 cadeiras)</option>
+              <option value="fair">Proporcional (513 cadeiras)</option>
+              <option value="danish">Compensatória (513 cadeiras)</option>
+              <option value="cubicroot">Raiz Cúbica (588 cadeiras)</option>
+            </optgroup>
+            <optgroup label="Senado Federal">
+              <option value="senado_regionalizado_1">Senado Regionalizado 1 (75 cadeiras)</option>
+              <option value="senado_regionalizado_2">Senado Regionalizado 2 (100 cadeiras)</option>
+              <option value="senado_degressivo">Senado Degressivo (135 cadeiras)</option>
+            </optgroup>
+          </select>
+        </div>
+
+        <!-- Base de Votos -->
+        <div class="config-section">
+          <h3>Base de Votos</h3>
+          <select id="selectVoteBase" class="select">
+            <optgroup label="Eleições Presidenciais">
+              <option value="presidente_2022">Presidente 2022 (1º Turno)</option>
+              <option value="presidente_2018">Presidente 2018 (1º Turno)</option>
+              <option value="presidente_2014">Presidente 2014 (1º Turno)</option>
+              <option value="presidente_2010">Presidente 2010 (1º Turno)</option>
+              <option value="presidente_2006">Presidente 2006 (1º Turno)</option>
+            </optgroup>
+            <optgroup label="Eleições para Deputado Federal">
+              <option value="deputado_2022" selected>Deputado Federal 2022</option>
+              <option value="deputado_2018">Deputado Federal 2018</option>
+              <option value="deputado_2014">Deputado Federal 2014</option>
+              <option value="deputado_2010">Deputado Federal 2010</option>
+              <option value="deputado_2006">Deputado Federal 2006</option>
+            </optgroup>
+          </select>
+        </div>
+
+        <!-- Cláusula de Exclusão Geral -->
+        <div class="config-section proportional-only" id="federalBarrierSection">
+          <div class="section-title-row">
+            <h3>Cláusula de Exclusão Geral</h3>
+            <label class="switch">
+              <input type="checkbox" id="toggleFederalBarrier" checked>
+              <span class="slider-switch"></span>
+            </label>
+          </div>
+          <div id="federalBarrierSettings" class="collapsible-settings">
+            <div class="slider-box">
+              <div class="slider-header">
+                <span class="slider-value" id="valFederalBarrier">2.0%</span>
+              </div>
+              <input type="range" class="simple-slider" id="sliderFederalBarrier" min="0.5" max="10.0" step="0.1" value="2.0">
+              <small class="help-text" id="helpFederalBarrier">Porcentagem mínima de votos válidos necessária para o partido eleger deputados.</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cláusula de Exclusão Circunscricional -->
+        <div class="config-section proportional-only" id="stateBarrierSection">
+          <div class="section-title-row">
+            <h3>Cláusula de Exclusão Circunscricional</h3>
+            <label class="switch">
+              <input type="checkbox" id="toggleStateBarrier">
+              <span class="slider-switch"></span>
+            </label>
+          </div>
+          <div id="stateBarrierSettings" class="collapsible-settings hidden">
+            <div class="slider-box" style="margin-top: 10px;">
+              <div class="slider-header">
+                <span class="slider-value" id="valStateBarrier">1.5%</span>
+              </div>
+              <input type="range" class="simple-slider" id="sliderStateBarrier" min="0.5" max="10.0" step="0.1" value="1.5">
+              <small class="help-text" id="helpStateBarrier">Partido precisa de 1.5% dos votos da circunscrição para receber cadeiras.</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Coligações Presidenciais (oculta em proporcional) -->
+        <div class="config-section hidden" id="presCoalitionSection">
+          <div class="section-title-row">
+            <h3>Coligações Presidenciais 2022</h3>
+            <label class="switch">
+              <input type="checkbox" id="togglePresCoalition">
+              <span class="slider-switch"></span>
+            </label>
+          </div>
+          <small class="help-text">
+            Simula como seria a eleição parlamentar se as coligações para a presidência da República fossem aplicadas nacionalmente (Brasil da Esperança, Brasil para Todos e Pelo Bem do Brasil).
+          </small>
+        </div>
+
+
+        <!-- Botão Aplicar -->
+        <button id="btnApplySimulation" class="btn btn-apply">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          Aplicar Cláusulas
+        </button>
+
+        <!-- Rodapé de Licença e Copyright -->
+        <div style="margin-top: 24px; padding-top: 12px; border-top: 1px solid var(--border-color); text-align: center; font-size: 11px; color: var(--muted);">
+          <div>&copy; 2026 Franzisquin</div>
+          <div style="margin-top: 4px;">Licenciado sob <a href="https://creativecommons.org/licenses/by-nc/4.0/deed.pt-br" target="_blank" style="color: var(--accent); text-decoration: none;">CC BY-NC 4.0</a></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- CENTER PANEL: MAP -->
+    <div class="panel side-res" style="flex:1; display:flex; flex-direction:column; position:relative;">
+      <div id="map"></div>
+      <div id="svgMapContainer" class="hidden"></div>
+      <!-- Circle view mode toggle: floating, centered at top of map -->
+      <div id="circleViewToggle" class="circle-view-toggle hidden">
+        <button id="btnCirclePizza" class="circle-view-btn" title="Setores por circunscrição">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="5"/></svg>
+          Setores
+        </button>
+        <button id="btnCircleDots" class="circle-view-btn active" title="Dot Plot (uma bolinha por deputado)">
+          <svg width="14" height="10" viewBox="0 0 21 14" fill="currentColor" style="flex-shrink:0;"><circle cx="3.5" cy="3.5" r="3"/><circle cx="10.5" cy="3.5" r="3"/><circle cx="17.5" cy="3.5" r="3"/><circle cx="3.5" cy="10.5" r="3"/><circle cx="10.5" cy="10.5" r="3"/><circle cx="17.5" cy="10.5" r="3"/></svg>
+          Dot Plot
+        </button>
+      </div>
+      <button id="btnBackToNational" class="btn-back-national hidden" title="Voltar para o Brasil">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+        Brasil todo
+      </button>
+      <div id="regionMiniMap" class="region-minimap-container hidden">
+        <div id="regionMiniMapBody" class="region-minimap-body"></div>
+      </div>
+      <div id="regionTooltip" class="chamber-tooltip hidden" style="position: absolute; pointer-events: none; z-index: 3000;"></div>
+      <div class="loader-overlay" id="mapLoader">
+        <div class="spinner"></div>
+        <span id="loaderText">Carregando dados...</span>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL: PARLIAMENT & RESULTS -->
+    <div class="panel side side-right">
+      <div class="panel-header">
+        <div class="results-header-info">
+          <h2 class="panel-title" id="resultsTitle">Brasil - Federal</h2>
+          <span class="panel-subtitle" id="resultsSubtitle">Carregando plenário...</span>
+        </div>
+      </div>
+      <!-- CHAMBER VIEW SECTION -->
+      <div class="chamber-section">
+        <div class="chamber-container">
+          <svg id="chamberSvg" viewBox="0 65 600 305" width="100%" preserveAspectRatio="xMidYMin meet"></svg>
+          <div id="chamberTooltip" class="chamber-tooltip hidden"></div>
+        </div>
+        <button id="btnPactometro" class="btn btn-apply" style="margin-top: 10px; width: 100%; display: inline-flex; justify-content: center; gap: 8px; background: linear-gradient(135deg, var(--warn), #d97706); box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25); border: none;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+          Pactômetro
+        </button>
+      </div>
+
+      <div class="body results-body">
+        <!-- SUMMARY STATS -->
+        <div class="simulation-metrics" id="simMetrics">
+          <!-- Votos válidos, QE, etc. -->
+        </div>
+
+        <!-- PROPORTIONAL LIST -->
+        <div class="section-title-row" style="margin: 12px 0 6px 0;">
+          <h3 style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--muted)">Bancadas e Eleitos</h3>
+        </div>
+        <div id="resultsList" class="results-list">
+          <!-- Dinamicamente gerado -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PACTÔMETRO MODAL -->
+  <div id="pactometroModal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+          Pactômetro
+        </h2>
+        <button id="btnClosePactometro" class="btn-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="pactometro-layout">
+          <!-- Semicircle identical to the main one -->
+          <div class="pactometro-chamber-container">
+            <svg id="pactometroChamberSvg" viewBox="0 65 600 305" width="100%" preserveAspectRatio="xMidYMin meet"></svg>
+            <div id="pactometroChamberTooltip" class="chamber-tooltip hidden"></div>
+          </div>
+          
+          <!-- Control panel -->
+          <div class="pactometro-controls">
+            <div class="coalition-stats">
+              <div class="stat-main">
+                <span class="stat-number" id="pactSeatsCount">0</span>
+                <span class="stat-label" id="pactSeatsTotal">/ 513 Cadeiras</span>
+              </div>
+              <div class="stat-status" id="pactStatusText">Selecione partidos para formar uma maioria</div>
+            </div>
+            
+            <!-- Progress bar -->
+            <div class="pact-progress-bar-container">
+              <div class="pact-progress-bar" id="pactProgressBar" style="width: 0%;"></div>
+              <div class="pact-progress-marker" id="pactProgressMarker" style="left: 50.1%;"></div>
+            </div>
+            
+            <!-- Party Selector List -->
+            <div class="pact-parties-list" id="pactPartiesList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCRIPT -->
+  <script src="simulador.js?v=20260602-1"></script>
+</body>
+
+</html>
