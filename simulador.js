@@ -5125,16 +5125,7 @@ function renderResultsList() {
       });
     }
 
-    // Add back button to go to national proportional view
-    if (currentElectionLevel !== 'estadual') {
-      const backBtn = document.createElement('button');
-      backBtn.className = 'btn btn-apply';
-      backBtn.style.marginTop = '16px';
-      backBtn.style.width = '100%';
-      backBtn.innerHTML = '← Voltar ao Brasil';
-      backBtn.addEventListener('click', () => { backToNational(); });
-      resultsList.appendChild(backBtn);
-    }
+
 
   } else if (selectedRegion !== null) {
     // ----------------------------------------------------------
@@ -5240,18 +5231,6 @@ function renderResultsList() {
 
     }
 
-    const backBtn = document.createElement('button');
-    backBtn.className = 'btn btn-apply';
-    backBtn.style.cssText = 'margin-top:16px;width:100%;';
-    if (currentElectionLevel === 'estadual') {
-      const stateName = UF_NAMES[selectedState] || selectedState;
-      backBtn.innerHTML = `← Voltar para ${stateName}`;
-    } else {
-      backBtn.innerHTML = '← Voltar ao Brasil';
-    }
-    backBtn.addEventListener('click', () => backToNational());
-    resultsList.appendChild(backBtn);
-
   } else if (selectedSubregion !== null) {
     // ----------------------------------------------------------
     // SUBREGION VIEW – selectedSubregion is set (deputados_semilocal)
@@ -5354,18 +5333,6 @@ function renderResultsList() {
       resultsList.appendChild(tableDiv);
 
     }
-
-    const backBtn = document.createElement('button');
-    backBtn.className = 'btn btn-apply';
-    backBtn.style.cssText = 'margin-top:16px;width:100%;';
-    if (currentElectionLevel === 'estadual') {
-      const stateName = UF_NAMES[selectedState] || selectedState;
-      backBtn.innerHTML = `← Voltar para ${stateName}`;
-    } else {
-      backBtn.innerHTML = '← Voltar ao Brasil';
-    }
-    backBtn.addEventListener('click', () => backToNational());
-    resultsList.appendChild(backBtn);
 
   } else {
     // ----------------------------------------------------------
@@ -7558,6 +7525,61 @@ async function renderDeputadosSemilocalSvgMap() {
   }
 }
 
+// Style for a single semilocal (regional circumscription) feature. Reads current
+// globals so it can be reused both on initial build and on in-place restyle.
+function getSemilocalFeatureStyle(feature) {
+  const selectedCirc = document.getElementById('selectCircumscription')?.value || 'estadual';
+  const selectedLevel = document.getElementById('selectElectionLevel')?.value || 'nacional';
+  const isRegionalNacional = selectedCirc === 'regional' && selectedLevel === 'nacional';
+  const subName = feature.properties.sub_name;
+
+  // Inset districts: show dark/empty fill with no visible polygon border
+  if (isRegionalNacional && getInsetDistrictSet().has(subName)) {
+    return { fillColor: '#0e1016', fillOpacity: 0.85, color: '#0e1016', weight: 0, opacity: 0 };
+  }
+
+  const subregionAllocations = (nationalSimulationResults && nationalSimulationResults.subregionAllocations) || {};
+  const winner = getSubregionWinner(subName);
+  const color = winner ? getPartyColor(winner) : '#777777';
+  let winnerPct = 0;
+  const alloc = subregionAllocations[subName] || {};
+  const sorted = Object.values(alloc).sort((a, b) => b - a);
+  if (sorted.length > 0) {
+    const sumSeats = sorted.reduce((s, v) => s + v, 0);
+    winnerPct = sumSeats > 0 ? (sorted[0] / sumSeats) * 100 : 0;
+  }
+  const fillCol = getUniversalGradientColor(color, winnerPct);
+  const hasSubregionSelection = selectedSubregion !== null;
+  const isSelected = selectedSubregion === subName;
+  const opacity = isSelected ? 1 : (hasSubregionSelection ? 0.35 : 0.85);
+  return { fillColor: fillCol, fillOpacity: opacity, color: '#111111', weight: 0.8, opacity: 0.9 };
+}
+
+// Fit the map to the selected subregion (or the whole semilocal layer when none).
+function fitSemilocalBounds(isRegionalNacional) {
+  if (!semilocalLayer) return;
+  const isInsetSubregion = selectedSubregion !== null && getInsetDistrictSet().has(selectedSubregion);
+  if (isInsetSubregion) return;
+
+  let targetBounds = null;
+  if (selectedSubregion !== null) {
+    semilocalLayer.eachLayer(layer => {
+      if (layer.feature && layer.feature.properties && layer.feature.properties.sub_name === selectedSubregion) {
+        targetBounds = layer.getBounds();
+      }
+    });
+  }
+
+  if (targetBounds && targetBounds.isValid()) {
+    glFitBounds(targetBounds, [30, 30]);
+  } else {
+    const bounds = isRegionalNacional ? getRegionalNationalBounds() : semilocalLayer.getBounds();
+    if (bounds && bounds.isValid()) {
+      glFitBounds(bounds, isRegionalNacional ? [35, 35] : [16, 16]);
+    }
+  }
+}
+
 // ─── Leaflet-based Semilocal map (replaces SVG renderer) ────────────────────
 function renderDeputadosSemilocalLeafletMap() {
   if (!mapObj) return;
@@ -7568,22 +7590,36 @@ function renderDeputadosSemilocalLeafletMap() {
 
   // Show Leaflet map, hide tiles (same style as other national views)
   if (tileLayer) tileLayer.setOpacity(0);
-  const btnBack = document.getElementById('btnBackToNational');
-  if (btnBack) {
-    if (selectedSubregion !== null) {
-      btnBack.classList.remove('hidden');
-      if (currentElectionLevel === 'estadual') {
-        const stateName = UF_NAMES[selectedState] || selectedState;
-        btnBack.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>${stateName}`;
-      } else {
-        btnBack.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>Brasil todo`;
-      }
-    } else {
-      btnBack.classList.add('hidden');
-    }
+  syncBackToNationalButton();
+
+  if (!semilocalCircuitosGeoJSON) {
+    console.warn('semilocalCircuitosGeoJSON not loaded yet');
+    return;
+  }
+  if (!nationalSimulationResults) return;
+
+  // The visible feature set only depends on the source data and (in state-level
+  // mode) the selected state. When it is unchanged, restyle the existing layer in
+  // place instead of rebuilding the whole GeoJSON source — a full rebuild blanks
+  // the map for a frame, which is the flicker seen when clicking a circumscription.
+  const filterState = (currentElectionLevel === 'estadual' && selectedState) ? selectedState : null;
+  const canReuse = semilocalLayer && semilocalLayer._added
+    && semilocalLayer.__semilocalSrc === semilocalCircuitosGeoJSON
+    && semilocalLayer.__semilocalFilterState === filterState;
+
+  if (canReuse) {
+    semilocalLayer.eachLayer(layer => {
+      if (!layer.feature || !layer.feature.properties) return;
+      const subName = layer.feature.properties.sub_name;
+      layer.setStyle(getSemilocalFeatureStyle(layer.feature));
+      layer.bindTooltip(getSubregionTooltipHtml(subName), { className: 'district-nyt-tooltip', sticky: true });
+    });
+    drawSemilocalCircles();
+    fitSemilocalBounds(isRegionalNacional);
+    return;
   }
 
-  // Remove any previous semilocal layer
+  // Feature set changed — rebuild the layer from scratch.
   if (semilocalLayer) {
     glRemove(semilocalLayer);
     semilocalLayer = null;
@@ -7607,16 +7643,6 @@ function renderDeputadosSemilocalLeafletMap() {
   }
   clearStateCircles();
 
-  if (!semilocalCircuitosGeoJSON) {
-    console.warn('semilocalCircuitosGeoJSON not loaded yet');
-    return;
-  }
-
-  if (!nationalSimulationResults) return;
-  const { subregionSeats, subregionAllocations } = nationalSimulationResults;
-  const hasSubregionSelection = selectedSubregion !== null;
-
-
   semilocalLayer = glGeoJSON(semilocalCircuitosGeoJSON, {
     filter: feature => {
       if (currentElectionLevel === 'estadual' && selectedState) {
@@ -7625,68 +7651,21 @@ function renderDeputadosSemilocalLeafletMap() {
       }
       return true;
     },
-    style: feature => {
-      const subName = feature.properties.sub_name;
-
-      // Inset districts: show dark/empty fill with no visible polygon border
-      if (isRegionalNacional && getInsetDistrictSet().has(subName)) {
-        return { fillColor: '#0e1016', fillOpacity: 0.85, color: '#0e1016', weight: 0, opacity: 0 };
-      }
-
-      const winner = getSubregionWinner(subName);
-      const color = winner ? getPartyColor(winner) : '#777777';
-      let winnerPct = 0;
-      const alloc = subregionAllocations[subName] || {};
-      const sorted = Object.values(alloc).sort((a, b) => b - a);
-      if (sorted.length > 0) {
-        const sumSeats = sorted.reduce((s, v) => s + v, 0);
-        winnerPct = sumSeats > 0 ? (sorted[0] / sumSeats) * 100 : 0;
-      }
-      const fillCol = getUniversalGradientColor(color, winnerPct);
-      const isSelected = selectedSubregion === subName;
-      const opacity = isSelected ? 1 : (hasSubregionSelection ? 0.35 : 0.85);
-      return { fillColor: fillCol, fillOpacity: opacity, color: '#111111', weight: 0.8, opacity: 0.9 };
-    },
+    style: feature => getSemilocalFeatureStyle(feature),
     onEachFeature: (feature, layer) => {
       const subName = feature.properties.sub_name;
-      const tooltipHtml = getSubregionTooltipHtml(subName);
-      layer.bindTooltip(tooltipHtml, { className: 'district-nyt-tooltip', sticky: true });
+      layer.bindTooltip(getSubregionTooltipHtml(subName), { className: 'district-nyt-tooltip', sticky: true });
       layer.on('click', () => {
         selectSubregion(subName);
       });
     }
   }).addTo(mapObj);
+  semilocalLayer.__semilocalSrc = semilocalCircuitosGeoJSON;
+  semilocalLayer.__semilocalFilterState = filterState;
 
   // Draw seat circles for each regional circumscription (mode-aware)
   drawSemilocalCircles();
-
-  // Fit map to the selected subregion bounds or the semilocal layer bounds (whole Brazil)
-  let targetBounds = null;
-  const isInsetSubregion = selectedSubregion !== null && getInsetDistrictSet().has(selectedSubregion);
-
-  if (!isInsetSubregion) {
-    if (selectedSubregion !== null) {
-      semilocalLayer.eachLayer(layer => {
-        if (layer.feature && layer.feature.properties && layer.feature.properties.sub_name === selectedSubregion) {
-          targetBounds = layer.getBounds();
-        }
-      });
-    }
-
-    if (targetBounds && targetBounds.isValid()) {
-      glFitBounds(targetBounds, [30, 30]);
-    } else {
-      let bounds = null;
-      if (isRegionalNacional) {
-        bounds = getRegionalNationalBounds();
-      } else {
-        bounds = semilocalLayer.getBounds();
-      }
-      if (bounds && bounds.isValid()) {
-        glFitBounds(bounds, isRegionalNacional ? [35, 35] : [16, 16]);
-      }
-    }
-  }
+  fitSemilocalBounds(isRegionalNacional);
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -8281,12 +8260,40 @@ function selectSubregion(subName) {
   renderMap();
 }
 
+// Centralized visibility/label for the "Voltar ao Brasil" button.
+// Shows whenever any subdivision (state, region, sub-region or district) is
+// selected, regardless of the map type (senado SVG, estados, regional, distrital).
+function syncBackToNationalButton() {
+  const btnBack = document.getElementById('btnBackToNational');
+  if (!btnBack) return;
+
+  const hasSelection = selectedState !== null || selectedRegion !== null
+    || selectedSubregion !== null || selectedDistrict !== null;
+
+  if (!hasSelection) {
+    btnBack.classList.add('hidden');
+    return;
+  }
+
+  // In state-level mode, drilling into a sub-region/region/district returns to
+  // the state first; otherwise the button returns to the national view.
+  const backToState = currentElectionLevel === 'estadual' && selectedState !== null
+    && (selectedSubregion !== null || selectedRegion !== null || selectedDistrict !== null);
+  const label = backToState ? (UF_NAMES[selectedState] || selectedState) : 'Brasil todo';
+
+  btnBack.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>${label}`;
+  btnBack.classList.remove('hidden');
+}
+
 function renderMap() {
   // Clear any existing regional map insets/outlines first
   if (mapObj) {
     clearInsetOutlines();
     clearInsetMapLayers();
   }
+
+  // Keep the "Voltar ao Brasil" button in sync for every map type below.
+  syncBackToNationalButton();
 
   // Clean up semilocal layer if we are not in semilocal mode
   if (currentConfig.circumscription !== 'regional' && semilocalLayer && mapObj) {
@@ -8349,8 +8356,7 @@ function renderMap() {
   if (minimapEl) minimapEl.classList.add('hidden');
 
   if (selectedState === null || keepNationalMap) {
-    // Show national view
-    document.getElementById('btnBackToNational').classList.add('hidden');
+    // Show national view (button visibility handled by syncBackToNationalButton)
 
     // Hide map tiles for proportional national view to just show plain bg
     if (tileLayer) tileLayer.setOpacity(0);
@@ -8414,16 +8420,8 @@ function renderMap() {
     drawStateCircles();
   } else {
     // State-selected detail view: hide the toggle (no circles on detail view)
+    // (button visibility/label handled by syncBackToNationalButton)
     setCircleToggleVisible(false);
-    const btnBack = document.getElementById('btnBackToNational');
-    if (btnBack) {
-      if (currentElectionLevel === 'estadual') {
-        btnBack.classList.add('hidden');
-      } else {
-        btnBack.classList.remove('hidden');
-        btnBack.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>Brasil todo`;
-      }
-    }
 
     // Restore map tiles for proportional state view
     if (tileLayer) tileLayer.setOpacity(1);

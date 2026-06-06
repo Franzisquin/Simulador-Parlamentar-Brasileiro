@@ -494,33 +494,52 @@ html, body {
   stroke-width: 600px !important;
 }
 
+/* Botão "Voltar ao Brasil": centralizado logo abaixo do toggle Setores/Dot Plot,
+   com aparência similar a ele. Só aparece quando há estado/circunscrição selecionada. */
 .btn-back-national {
   position: absolute;
-  top: 20px;
-  left: 20px;
+  top: 56px;
+  left: 50%;
   z-index: 1000;
-  background-color: var(--card);
-  color: var(--text);
+  background: var(--card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  padding: 8px 14px;
-  font-size: 0.8rem;
+  box-shadow: var(--shadow);
+  color: var(--text-sec);
+  padding: 7px 15px;
+  font-size: 0.73rem;
+  font-family: var(--font-main);
   font-weight: 600;
   cursor: pointer;
-  box-shadow: var(--shadow);
   display: flex;
   align-items: center;
-  transition: all 0.2s;
+  gap: 2px;
+  white-space: nowrap;
+  opacity: 1;
+  transform: translateX(-50%) translateY(0) scale(1);
+  transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+              background 0.15s ease,
+              color 0.15s ease,
+              border-color 0.2s ease;
+  pointer-events: auto;
 }
 
 .btn-back-national:hover {
-  background-color: var(--card-hover);
-  transform: translateX(-2px);
-  border-color: var(--text-sec);
+  background: var(--card-hover);
+  color: var(--text);
+  border-color: var(--border-color);
+}
+
+.btn-back-national:active {
+  transform: translateX(-50%) scale(0.97);
+  transition-duration: 0.1s;
 }
 
 .btn-back-national.hidden {
-  display: none;
+  opacity: 0;
+  transform: translateX(-50%) translateY(-12px) scale(0.92);
+  pointer-events: none;
 }
 
 /* ── Circle view toggle (pizza vs bolinhas) ──────────────────── */
@@ -1679,4 +1698,218 @@ body.mode-distrital .results-body .section-title-row {
 }
 
 /* Inset map system uses Leaflet GeoJSON layers — no HTML overlay CSS needed */
+
+/* ════════════════════════════════════════════════════════════════════
+   MOBILE MODE — telas pequenas (celulares e tablets em retrato/paisagem)
+   Mantém TODAS as funcionalidades: os três painéis viram abas acessíveis
+   por uma barra de navegação inferior. Nenhum elemento é removido, apenas
+   reorganizado para uma única coluna por vez.
+   ════════════════════════════════════════════════════════════════════ */
+
+/* Barra de navegação inferior — oculta no desktop */
+.mobile-nav {
+  display: none;
+}
+
+@media (max-width: 900px), (max-height: 520px) and (orientation: landscape) {
+
+  /* Toolbar mais compacta */
+  .app-toolbar {
+    height: 52px;
+    padding: 0 14px;
+  }
+
+  .toolbar-page {
+    font-size: 0.78rem;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 78vw;
+  }
+
+  /* O container deixa de ser grid: cada painel ocupa a área toda.
+     Reservamos espaço para a toolbar (52px) e a barra inferior (60px). */
+  .app {
+    display: block;
+    position: relative;
+    grid-template-columns: none;
+    width: 100vw;
+    height: calc(100vh - 52px - 60px);
+    height: calc(100dvh - 52px - 60px);
+  }
+
+  /* !important necessário: o painel central tem display/position inline */
+  .app > .panel {
+    position: absolute !important;
+    inset: 0;
+    width: 100% !important;
+    height: 100%;
+    border-left: none;
+    border-right: none;
+    display: none !important;
+  }
+
+  /* Mostra apenas o painel correspondente à aba ativa */
+  body[data-mobile-tab="config"]  .side-left  { display: flex !important; }
+  body[data-mobile-tab="map"]     .side-res   { display: flex !important; }
+  body[data-mobile-tab="results"] .side-right { display: flex !important; }
+
+  /* Fallback: se nenhuma aba estiver marcada, mostra o mapa */
+  body:not([data-mobile-tab]) .side-res { display: flex !important; }
+
+  /* Conteúdo dos painéis com respiro de toque */
+  .body {
+    padding: 16px;
+    gap: 16px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .config-section {
+    padding: 14px;
+  }
+
+  /* Alvos de toque maiores em selects e botões */
+  .select {
+    padding: 10px 12px;
+    font-size: 0.9rem;
+  }
+
+  .btn {
+    padding: 12px 16px;
+    font-size: 0.9rem;
+  }
+
+  /* Switch um pouco maior para o dedo */
+  .switch {
+    width: 42px;
+    height: 24px;
+  }
+  .slider-switch:before {
+    height: 18px;
+    width: 18px;
+  }
+  .switch input:checked + .slider-switch:before {
+    transform: translateX(18px);
+  }
+
+  /* Slider com thumb maior */
+  .simple-slider {
+    height: 8px;
+  }
+  .simple-slider::-webkit-slider-thumb {
+    width: 22px;
+    height: 22px;
+  }
+
+  /* Painel de resultados: gráfico do plenário e lista empilhados */
+  .chamber-section {
+    padding: 10px 14px;
+  }
+  .results-body {
+    padding: 14px;
+  }
+
+  /* Sobreposições do mapa reposicionadas para não colidirem */
+  .region-minimap-container {
+    width: 180px;
+    height: 150px;
+    bottom: 14px;
+    left: 14px;
+  }
+
+  .btn-back-national {
+    top: 50px;
+    padding: 7px 12px;
+    font-size: 0.72rem;
+  }
+
+  .circle-view-toggle {
+    top: 10px;
+  }
+  .circle-view-btn {
+    padding: 8px 12px;
+    font-size: 0.72rem;
+  }
+
+  /* Métricas em uma coluna mais legível quando muito estreito */
+  .simulation-metrics {
+    gap: 6px;
+  }
+
+  /* Modal do Pactômetro em tela cheia confortável */
+  .modal-content {
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    max-height: 100%;
+    border-radius: 0;
+  }
+  .modal-body {
+    padding: 16px;
+  }
+  .modal-header {
+    padding: 14px 16px;
+  }
+  .stat-number {
+    font-size: 2rem;
+  }
+
+  /* ── Barra de navegação inferior (abas) ───────────────────────── */
+  .mobile-nav {
+    display: flex;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: calc(60px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background-color: var(--card);
+    border-top: 1px solid var(--border-color);
+    z-index: 5000;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.25);
+  }
+
+  .mobile-nav-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    background: transparent;
+    border: none;
+    color: var(--text-sec);
+    font-family: var(--font-main);
+    font-size: 0.65rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 6px 4px;
+    transition: color 0.15s ease, background-color 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .mobile-nav-btn svg {
+    opacity: 0.85;
+  }
+
+  .mobile-nav-btn.active {
+    color: var(--accent);
+    background-color: var(--accent-glow);
+  }
+
+  .mobile-nav-btn.active svg {
+    opacity: 1;
+  }
+}
+
+/* Telas bem estreitas (celulares pequenos): métricas em coluna única */
+@media (max-width: 380px) {
+  .simulation-metrics {
+    grid-template-columns: 1fr;
+  }
+  .toolbar-page {
+    font-size: 0.72rem;
+  }
+}
 
