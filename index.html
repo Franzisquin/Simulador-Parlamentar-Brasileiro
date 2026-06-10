@@ -148,6 +148,16 @@
           </select>
         </div>
 
+        <!-- Critério de distribuição entre distritos (Municipal Regional) -->
+        <div class="config-section" id="municipalAllocSection" style="display:none;">
+          <h3>Critério de Distribuição entre Distritos</h3>
+          <select id="selectMunicipalAllocBase" class="select">
+            <option value="populacao" selected>População residente</option>
+            <option value="eleitorado">Eleitorado (votos válidos)</option>
+          </select>
+          <small class="help-text">Reparte as cadeiras entre os distritos pela população residente ou pelo total de votos válidos (eleitorado ativo nos locais de votação) de cada distrito na eleição selecionada. Cada distrito recebe no mínimo 1 cadeira.</small>
+        </div>
+
         <!-- Distribuição das Cadeiras por Estado -->
         <div class="config-section proportional-only" id="seatDistributionSection">
           <h3 id="seatDistributionLabel">Distribuição de Cadeiras por Estado</h3>

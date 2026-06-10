@@ -730,6 +730,129 @@ function getRegionalNationalBounds() {
 
 function latLng(arr) { return { lat: arr[0], lng: arr[1] }; } // Leaflet [lat,lng] -> {lat,lng}
 
+// ── Polo de inacessibilidade (polylabel) ──────────────────────────────────────
+// Ponto "mais interno" de um polígono — usado para posicionar os círculos de
+// resultado de modo que nunca caiam fora da própria área nem sobre a vizinha
+// (o centro do bounding box falha para distritos côncavos ou em forma de L).
+function __plSegDistSq(px, py, a, b) {
+  let x = a[0], y = a[1];
+  let dx = b[0] - x, dy = b[1] - y;
+  if (dx !== 0 || dy !== 0) {
+    const t = ((px - x) * dx + (py - y) * dy) / (dx * dx + dy * dy);
+    if (t > 1) { x = b[0]; y = b[1]; }
+    else if (t > 0) { x += dx * t; y += dy * t; }
+  }
+  dx = px - x; dy = py - y;
+  return dx * dx + dy * dy;
+}
+function __plPointToPolyDist(x, y, polygon) {
+  let inside = false, minDistSq = Infinity;
+  for (const ring of polygon) {
+    for (let i = 0, len = ring.length, j = len - 1; i < len; j = i++) {
+      const a = ring[i], b = ring[j];
+      if ((a[1] > y) !== (b[1] > y) &&
+          x < (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]) + a[0]) inside = !inside;
+      minDistSq = Math.min(minDistSq, __plSegDistSq(x, y, a, b));
+    }
+  }
+  return (inside ? 1 : -1) * Math.sqrt(minDistSq);
+}
+function __plCell(x, y, h, polygon) {
+  const d = __plPointToPolyDist(x, y, polygon);
+  return { x, y, h, d, max: d + h * Math.SQRT2 };
+}
+function __plCentroidCell(polygon) {
+  let area = 0, cx = 0, cy = 0;
+  const ring = polygon[0];
+  for (let i = 0, len = ring.length, j = len - 1; i < len; j = i++) {
+    const a = ring[i], b = ring[j];
+    const f = a[0] * b[1] - b[0] * a[1];
+    cx += (a[0] + b[0]) * f;
+    cy += (a[1] + b[1]) * f;
+    area += f * 3;
+  }
+  if (area === 0) return __plCell(ring[0][0], ring[0][1], 0, polygon);
+  return __plCell(cx / area, cy / area, 0, polygon);
+}
+function __polylabel(polygon, precision) {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const p of polygon[0]) {
+    if (p[0] < minX) minX = p[0];
+    if (p[1] < minY) minY = p[1];
+    if (p[0] > maxX) maxX = p[0];
+    if (p[1] > maxY) maxY = p[1];
+  }
+  const width = maxX - minX, height = maxY - minY;
+  const cellSize = Math.min(width, height);
+  if (cellSize === 0) return [minX, minY];
+  let h = cellSize / 2;
+
+  const queue = [];
+  for (let x = minX; x < maxX; x += cellSize)
+    for (let y = minY; y < maxY; y += cellSize)
+      queue.push(__plCell(x + h, y + h, h, polygon));
+
+  let best = __plCentroidCell(polygon);
+  const bboxCell = __plCell(minX + width / 2, minY + height / 2, 0, polygon);
+  if (bboxCell.d > best.d) best = bboxCell;
+
+  let guard = 0;
+  while (queue.length && guard++ < 100000) {
+    let bi = 0;
+    for (let i = 1; i < queue.length; i++) if (queue[i].max > queue[bi].max) bi = i;
+    const cell = queue.splice(bi, 1)[0];
+    if (cell.d > best.d) best = cell;
+    if (cell.max - best.d <= precision) continue;
+    h = cell.h / 2;
+    queue.push(__plCell(cell.x - h, cell.y - h, h, polygon));
+    queue.push(__plCell(cell.x + h, cell.y - h, h, polygon));
+    queue.push(__plCell(cell.x - h, cell.y + h, h, polygon));
+    queue.push(__plCell(cell.x + h, cell.y + h, h, polygon));
+  }
+  return [best.x, best.y];
+}
+function __plRingArea(ring) {
+  let area = 0;
+  for (let i = 0, len = ring.length, j = len - 1; i < len; j = i++)
+    area += (ring[j][0] + ring[i][0]) * (ring[j][1] - ring[i][1]);
+  return area / 2;
+}
+// Centro visual {lat,lng} de uma Feature (Polygon|MultiPolygon), garantido dentro
+// da maior parte do polígono. Retorna null se a geometria não for utilizável.
+function featureVisualCenter(feature) {
+  try {
+    const geom = feature && feature.geometry;
+    if (!geom) return null;
+    let poly;
+    if (geom.type === 'Polygon') {
+      poly = geom.coordinates;
+    } else if (geom.type === 'MultiPolygon') {
+      let best = null, bestArea = -Infinity;
+      for (const p of geom.coordinates) {
+        const a = Math.abs(__plRingArea(p[0]));
+        if (a > bestArea) { bestArea = a; best = p; }
+      }
+      poly = best;
+    } else {
+      return null;
+    }
+    if (!poly || !poly[0] || poly[0].length < 3) return null;
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const p of poly[0]) {
+      if (p[0] < minX) minX = p[0];
+      if (p[1] < minY) minY = p[1];
+      if (p[0] > maxX) maxX = p[0];
+      if (p[1] > maxY) maxY = p[1];
+    }
+    const precision = Math.max(1e-7, Math.min(maxX - minX, maxY - minY) / 100);
+    const pt = __polylabel(poly, precision);
+    if (!pt || !Number.isFinite(pt[0]) || !Number.isFinite(pt[1])) return null;
+    return { lat: pt[1], lng: pt[0] };
+  } catch (e) {
+    return null;
+  }
+}
+
 // Map a Leaflet style object onto our baked feature properties.
 function __glBakeStyle(props, s) {
   if (!s) return;
@@ -3007,7 +3130,8 @@ function updateCurrentConfig() {
     groupByPresidentialCoalition: togglePresCoalition,
     electionLevel: currentElectionLevel,
     electionState: currentElectionState,
-    electionCapital: currentElectionCapital
+    electionCapital: currentElectionCapital,
+    municipalAllocBase: document.getElementById('selectMunicipalAllocBase')?.value || 'populacao'
   };
 }
 
@@ -3026,6 +3150,8 @@ function updateConfigVisibility() {
   // Saindo do modo municipal: restaurar opções padrão de circunscrição + capital escondido
   const capSection = document.getElementById('capitalSelectionSection');
   if (capSection) capSection.classList.add('hidden');
+  const muniAllocSection = document.getElementById('municipalAllocSection');
+  if (muniAllocSection) muniAllocSection.style.display = 'none';
   const circSel0 = document.getElementById('selectCircumscription');
   if (circSel0 && !circSel0.querySelector('option[value="estadual"]')) {
     circSel0.innerHTML = `
@@ -3217,6 +3343,9 @@ function updateMunicipalConfigVisibility() {
     circVal = circSel.value;
   }
   display('circumscriptionSection', true);
+
+  // Critério de repartição entre distritos: só no modo regional
+  display('municipalAllocSection', circVal === 'municipal_regional');
 
   // Cláusulas: geral sempre; circunscricional só no regional
   display('federalBarrierSection', true);
@@ -4418,6 +4547,35 @@ function runMunicipalSimulation() {
   };
 }
 
+// Reparte `seats` entre `keys` proporcionalmente a weightFn(k) (maior resto / Hare),
+// acumulando o resultado em `out[k]`.
+function distributeSeatsHare(keys, seats, weightFn, out) {
+  keys.forEach(k => { if (out[k] == null) out[k] = 0; });
+  if (seats <= 0 || keys.length === 0) return;
+  const weights = keys.map(k => ({ k, w: Math.max(0, weightFn(k)) }));
+  const totalW = weights.reduce((s, x) => s + x.w, 0);
+  if (totalW <= 0) {
+    // Sem pesos válidos: distribui de forma equânime em ordem.
+    for (let i = 0; i < seats; i++) out[keys[i % keys.length]] += 1;
+    return;
+  }
+  const Q = totalW / seats;
+  let allocated = 0;
+  const remainders = [];
+  weights.forEach(({ k, w }) => {
+    const initial = Math.floor(w / Q);
+    out[k] += initial;
+    allocated += initial;
+    remainders.push({ k, rem: w % Q, w });
+  });
+  remainders.sort((a, b) => Math.abs(b.rem - a.rem) > 1e-9 ? b.rem - a.rem : b.w - a.w);
+  let idx = 0;
+  while (allocated < seats && remainders.length) {
+    out[remainders[idx % remainders.length].k] += 1;
+    allocated++; idx++;
+  }
+}
+
 // Reparte totalSeats entre as regiões DIST03 por população (Hare) e aloca por região
 function runMunicipalRegionalSimulation(cap, totalSeats, partyVotes, totalValidVotes, eligibleParties, partyPct, electionKey, year, seatsInfo) {
   const calcMethod = currentConfig.calcMethod;
@@ -4440,27 +4598,36 @@ function runMunicipalRegionalSimulation(cap, totalSeats, partyVotes, totalValidV
     return;
   }
 
-  // Reparte cadeiras por população (maior resto / Hare)
+  // Critério de repartição entre os distritos: população residente (padrão) ou
+  // eleitorado/votação (total de votos válidos do distrito na eleição selecionada).
+  // Usar o eleitorado torna o quociente eleitoral (votos por cadeira) muito mais
+  // uniforme entre os distritos do que a população.
+  const allocBase = currentConfig.municipalAllocBase || 'populacao';
+  const weightFor = (d) => {
+    if (allocBase === 'eleitorado') {
+      const sub = municipalVotosData[`${cap}-${d}`];
+      const ek = sub ? sub[electionKey] : null;
+      const v = ek ? (ek.TOTAL_VOTOS_VALIDOS || 0) : 0;
+      // Sem votos no distrito (sem dados): cai de volta para a população
+      return v > 0 ? v : (regioes[d] || 0);
+    }
+    return regioes[d] || 0;
+  };
+
+  // Reparte cadeiras entre os distritos (maior resto / Hare), garantindo no
+  // mínimo 1 cadeira por distrito quando há cadeiras suficientes.
   const subSeats = {};
   if (distList.length === 1) {
     subSeats[distList[0]] = totalSeats;
+  } else if (totalSeats <= distList.length) {
+    // Cadeiras insuficientes para 1 por distrito: reparte apenas por peso.
+    distributeSeatsHare(distList, totalSeats, weightFor, subSeats);
   } else {
-    const totalPop = distList.reduce((s, d) => s + (regioes[d] || 0), 0);
-    const Q = totalPop / totalSeats;
-    let allocated = 0;
-    const remainders = [];
-    distList.forEach(d => {
-      const initial = Q > 0 ? Math.floor((regioes[d] || 0) / Q) : 0;
-      subSeats[d] = initial;
-      allocated += initial;
-      remainders.push({ d, rem: Q > 0 ? (regioes[d] || 0) % Q : 0, pop: regioes[d] || 0 });
-    });
-    remainders.sort((a, b) => Math.abs(b.rem - a.rem) > 1e-9 ? b.rem - a.rem : b.pop - a.pop);
-    let idx = 0;
-    while (allocated < totalSeats && remainders.length) {
-      subSeats[remainders[idx % remainders.length].d]++;
-      allocated++; idx++;
-    }
+    // 1 cadeira garantida por distrito + repartição do restante por peso.
+    distList.forEach(d => { subSeats[d] = 1; });
+    const extra = {};
+    distributeSeatsHare(distList, totalSeats - distList.length, weightFor, extra);
+    distList.forEach(d => { subSeats[d] += (extra[d] || 0); });
   }
 
   const subregionSeats = {};
@@ -9168,7 +9335,9 @@ function drawMunicipalRegionCircles() {
     const voteMap = getMunicipalRegionVoteMap(cap, d);
     const { seatColors } = buildOrderedSeatColors(allocations, voteMap);
 
-    let center = layer.getBounds().getCenter();
+    // Polo de inacessibilidade: mantém o círculo dentro do próprio distrito
+    // (o centro do bounding box vazava para fora ou sobre o distrito vizinho).
+    let center = featureVisualCenter(feature) || layer.getBounds().getCenter();
 
     let myIcon;
     if (circleViewMode === 'dots') {
@@ -10413,6 +10582,18 @@ async function initApp() {
       renderMap();
       initPactometro();
     });
+
+    // Critério de distribuição entre distritos (modo Municipal Regional)
+    const muniAllocSelect = document.getElementById('selectMunicipalAllocBase');
+    if (muniAllocSelect) {
+      muniAllocSelect.addEventListener('change', () => {
+        selectedMunicipalRegion = null; // reset drill-down ao trocar o critério
+        runSimulation();
+        renderResultsList();
+        renderMap();
+        initPactometro();
+      });
+    }
 
     // Capital selector (modo Municipal)
     const capitalSelect = document.getElementById('selectElectionCapital');
