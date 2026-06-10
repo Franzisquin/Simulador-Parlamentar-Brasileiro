@@ -1016,6 +1016,13 @@ let distritosVotosData = null; // Loaded from distritos_votos.json (deputy votes
 let semilocalVotosData = null; // Loaded from semilocal_votos.json (deputy & presidential votes per subregion)
 let semilocalCircuitosGeoJSON = null; // Loaded from semilocal_circuitos.geojson (subregion geometries from GPKG)
 let semilocalLayer = null; // Leaflet GeoJSON layer for semilocal circuits
+// --- Municipal (capitais) ---
+let municipalVotosData = null;       // municipal_capitais_votos.json (votos por partido: cidade e "<Capital>-<DIST03>")
+let municipalCircuitosGeoJSON = null; // municipal_capitais_circuitos.geojson (regiões DIST03, não generalizadas)
+let municipalSeatsData = null;       // municipal_capitais_seats.json ({alt, real{ano}, uf, cd_mun, regioes{dist:pop}})
+let municipalLayer = null;           // camada GL do mapa municipal
+let currentElectionCapital = '';     // capital selecionada no modo municipal
+let selectedMunicipalRegion = null;  // 'Capital-N' quando uma região municipal está selecionada, null caso contrário
 let distritosDetalheMunisData = null; // Loaded from distritos_detalhe_munis.json (municipal detail per district)
 let distritosLayer = null;   // Leaflet GeoJSON layer for districts
 let distritosMuniLayer = null; // Leaflet GeoJSON layer for municipalities within a selected district
@@ -1486,16 +1493,97 @@ function getStateTooltipHtml(uf) {
   `;
 }
 
-function buildSeatTooltipHtml(title, parties, totalSeats, footerLabel) {
+// ── Municipal region tooltip (replicates getSubregionTooltipHtml pattern) ──
+function getMunicipalRegionTooltipHtml(cap, distNum) {
+  if (!nationalSimulationResults) return `<div class="nyt-tooltip-container" style="font-family:var(--font-main);color:var(--text);min-width:200px;"><div class="district-nyt-title">${cap} — Região ${distNum}</div></div>`;
+  const subName = `${cap}-${distNum}`;
+  const seatsCount = (nationalSimulationResults.subregionSeats || {})[subName] || 0;
+  const alloc = (nationalSimulationResults.subregionAllocations || {})[subName] || {};
+  const voteMap = getMunicipalRegionVoteMap(cap, distNum);
+  const winner = municipalTopParty(alloc, voteMap);
+
+  const parties = Object.entries(alloc)
+    .filter(([_, seats]) => seats > 0)
+    .map(([party, seats]) => {
+      return {
+        party,
+        seats,
+        votes: (voteMap && voteMap[party]) || 0,
+        color: getPartyColor(party),
+        cleanName: getCleanGroupName(party),
+        isWinner: party === winner
+      };
+    })
+    .sort((a, b) => b.seats !== a.seats ? b.seats - a.seats : b.votes - a.votes);
+
+  const seatsInfo = municipalSeatsData ? municipalSeatsData[cap] : null;
+  const pop = seatsInfo && seatsInfo.regioes && seatsInfo.regioes[String(distNum)] ? seatsInfo.regioes[String(distNum)] : 0;
+  const footerExtra = pop > 0 ? ` · ${fmtInt(pop)} hab` : '';
+  return buildSeatTooltipHtml(`${cap} — Região ${distNum}`, parties, seatsCount, `vagas${footerExtra}`, true);
+}
+
+// ── Municipal region vote map (replicates getSubregionVoteMap pattern) ──
+function getMunicipalRegionVoteMap(cap, distNum) {
+  const subName = `${cap}-${distNum}`;
+  if (!municipalVotosData || !municipalVotosData[subName]) return {};
+  const electionKey = document.getElementById('selectVoteBase')?.value || 'vereador_2024';
+  const subData = municipalVotosData[subName][electionKey];
+  if (!subData) return {};
+  const votes = {};
+  for (const [party, value] of Object.entries(subData)) {
+    if (party === 'VOTOS_BRANCOS' || party === 'VOTOS_NULOS' || party === 'TOTAL_VOTOS_VALIDOS') continue;
+    const stdKey = currentYear >= 2022 ? getStandardFederationKey(party) : getStandardFederationKey(party, true);
+    votes[stdKey] = (votes[stdKey] || 0) + value;
+  }
+  return votes;
+}
+
+// ── Municipal whole-city vote map ──
+function getMunicipalCityVoteMap(cap) {
+  if (!municipalVotosData || !municipalVotosData[cap]) return {};
+  const electionKey = document.getElementById('selectVoteBase')?.value || 'vereador_2024';
+  const cityData = municipalVotosData[cap][electionKey];
+  if (!cityData) return {};
+  const votes = {};
+  for (const [party, value] of Object.entries(cityData)) {
+    if (party === 'VOTOS_BRANCOS' || party === 'VOTOS_NULOS' || party === 'TOTAL_VOTOS_VALIDOS') continue;
+    const stdKey = currentYear >= 2022 ? getStandardFederationKey(party) : getStandardFederationKey(party, true);
+    votes[stdKey] = (votes[stdKey] || 0) + value;
+  }
+  return votes;
+}
+
+// ── Municipal whole-city tooltip (replicates getStateTooltipHtml pattern) ──
+function getMunicipalCityTooltipHtml(cap) {
+  if (!nationalSimulationResults) return `<div class="nyt-tooltip-container" style="font-family:var(--font-main);color:var(--text);min-width:200px;"><div class="district-nyt-title">${cap}</div></div>`;
+  const seats = (nationalSimulationResults.nationalSeats) || {};
+  const totalSeats = Object.values(nationalSimulationResults.stateSeats || {}).reduce((s, v) => s + v, 0) || 0;
+  const cityVoteMap = getMunicipalCityVoteMap(cap);
+  const winner = municipalTopParty(seats, cityVoteMap);
+  const parties = Object.entries(seats)
+    .filter(([_, n]) => n > 0)
+    .map(([party, n]) => ({
+      party, seats: n,
+      votes: cityVoteMap[party] || 0,
+      color: getPartyColor(party),
+      cleanName: getCleanGroupName(party),
+      isWinner: party === winner
+    }))
+    .sort((a, b) => b.seats !== a.seats ? b.seats - a.seats : b.votes - a.votes);
+  return buildSeatTooltipHtml(`${cap}`, parties, totalSeats, 'vagas', true);
+}
+
+function buildSeatTooltipHtml(title, parties, totalSeats, footerLabel, showVotes = false) {
   const sortedParties = (parties || [])
     .filter(p => p && p.seats > 0)
-    .sort((a, b) => b.seats - a.seats);
+    .sort((a, b) => b.seats - a.seats || b.votes - a.votes);
 
   const top5 = sortedParties.slice(0, 5);
 
   let rowsHtml = '';
   top5.forEach(p => {
     const pctStr = totalSeats > 0 ? ((p.seats / totalSeats) * 100).toFixed(2) : '0.00';
+    const votesHtml = showVotes ? `<td style="color: var(--text-sec); text-align: right; padding: 4px 8px;">${fmtInt(p.votes)}</td>` : '';
     if (p.isWinner) {
       rowsHtml += `
         <tr>
@@ -1506,6 +1594,7 @@ function buildSeatTooltipHtml(title, parties, totalSeats, footerLabel) {
             </div>
           </td>
           <td style="color: var(--text);">${p.seats}</td>
+          ${votesHtml}
           <td style="font-weight: bold; color: var(--text);">${pctStr}%</td>
         </tr>
       `;
@@ -1518,6 +1607,7 @@ function buildSeatTooltipHtml(title, parties, totalSeats, footerLabel) {
             </div>
           </td>
           <td style="color: var(--text-sec);">${p.seats}</td>
+          ${votesHtml}
           <td style="font-weight: bold; color: var(--text);">${pctStr}%</td>
         </tr>
       `;
@@ -1525,17 +1615,20 @@ function buildSeatTooltipHtml(title, parties, totalSeats, footerLabel) {
   });
 
   if (rowsHtml === '') {
-    rowsHtml = `<tr><td colspan="3" style="text-align:center;color:var(--muted);padding: 8px;">Nenhuma vaga conquistada</td></tr>`;
+    rowsHtml = `<tr><td colspan="${showVotes ? 4 : 3}" style="text-align:center;color:var(--muted);padding: 8px;">Nenhuma vaga conquistada</td></tr>`;
   }
 
+  const headerVotesHtml = showVotes ? `<th style="text-align: right; padding: 4px 8px;">Votos</th>` : '';
+
   return `
-    <div class="nyt-tooltip-container" style="font-family: var(--font-main); color: var(--text); min-width: 250px;">
+    <div class="nyt-tooltip-container" style="font-family: var(--font-main); color: var(--text); min-width: ${showVotes ? 290 : 250}px;">
       <div class="district-nyt-title">${title}</div>
       <table class="district-nyt-table">
         <thead>
           <tr>
             <th style="text-align: left;">Partido</th>
             <th>Vagas</th>
+            ${headerVotesHtml}
             <th>%</th>
           </tr>
         </thead>
@@ -2853,6 +2946,7 @@ function updateCurrentConfig() {
 
   currentElectionLevel = document.getElementById('selectElectionLevel')?.value || 'nacional';
   currentElectionState = document.getElementById('selectElectionState')?.value || '';
+  currentElectionCapital = document.getElementById('selectElectionCapital')?.value || '';
 
   // Override seat distribution to 'real' if level is estadual but no state is selected
   if (currentElectionLevel === 'estadual' && !currentElectionState) {
@@ -2869,7 +2963,8 @@ function updateCurrentConfig() {
     valStateBarrier,
     groupByPresidentialCoalition: togglePresCoalition,
     electionLevel: currentElectionLevel,
-    electionState: currentElectionState
+    electionState: currentElectionState,
+    electionCapital: currentElectionCapital
   };
 }
 
@@ -2878,6 +2973,24 @@ function updateConfigVisibility() {
   const level = document.getElementById('selectElectionLevel')?.value || 'nacional';
   const circumscription = document.getElementById('selectCircumscription')?.value || 'estadual';
   const isEstadual = (level === 'estadual');
+
+  // ---- Municipal (capitais): visibilidade dedicada, sempre proporcional ----
+  if (level === 'municipal') {
+    updateMunicipalConfigVisibility();
+    return;
+  }
+
+  // Saindo do modo municipal: restaurar opções padrão de circunscrição + capital escondido
+  const capSection = document.getElementById('capitalSelectionSection');
+  if (capSection) capSection.classList.add('hidden');
+  const circSel0 = document.getElementById('selectCircumscription');
+  if (circSel0 && !circSel0.querySelector('option[value="estadual"]')) {
+    circSel0.innerHTML = `
+      <option value="nacional" id="optCircNacional">Nacional (circunscrição única)</option>
+      <option value="estadual" selected>Estadual (por estado)</option>
+      <option value="regional">Regional (circunscrições sub-estaduais)</option>
+    `;
+  }
 
   // State selection — only visible when estadual
   const stateSection = document.getElementById('stateSelectionSection');
@@ -3004,6 +3117,72 @@ function updateConfigVisibility() {
   }
 }
 
+// Visibilidade do modo Municipal (Capitais) — sempre proporcional
+function updateMunicipalConfigVisibility() {
+  // Força sistema proporcional (esconde seletor e remove modo distrital)
+  const sysSel = document.getElementById('selectSystemType');
+  if (sysSel) sysSel.value = 'proporcional';
+  currentSystemType = 'proporcional';
+  document.body.classList.remove('mode-distrital');
+
+  const show = (id, visible) => {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('hidden', !visible);
+  };
+  const display = (id, visible) => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = visible ? '' : 'none';
+  };
+
+  show('stateSelectionSection', false);
+  show('capitalSelectionSection', true);
+  show('systemTypeSection', false);
+  show('presCoalitionSection', false);
+
+  // Distribuição das cadeiras (município): Realista (ano) x Regra Alternativa (print)
+  const cap = document.getElementById('selectElectionCapital')?.value || '';
+  const vb = document.getElementById('selectVoteBase')?.value || 'vereador_2024';
+  const yr = (vb.match(/(\d{4})/) || [])[1];
+  let realN = '?', altN = '?';
+  if (cap && municipalSeatsData && municipalSeatsData[cap]) {
+    altN = municipalSeatsData[cap].alt;
+    realN = (yr && municipalSeatsData[cap].real && municipalSeatsData[cap].real[yr]) || '?';
+  }
+  const seatSel = document.getElementById('selectSeatDistribution');
+  const seatLabel = document.getElementById('seatDistributionLabel');
+  if (seatLabel) seatLabel.textContent = 'Distribuição de Cadeiras no Município';
+  if (seatSel) {
+    const prev = seatSel.value;
+    seatSel.innerHTML = `
+      <option value="real_municipal">Realista (${realN} cadeiras)</option>
+      <option value="alt_municipal">Regra Alternativa (${altN} cadeiras)</option>
+    `;
+    seatSel.value = (prev === 'alt_municipal') ? 'alt_municipal' : 'real_municipal';
+  }
+  display('seatDistributionSection', true);
+
+  // Tipo de circunscrição: Município inteiro x Regional
+  const circSel = document.getElementById('selectCircumscription');
+  let circVal = 'municipal_inteiro';
+  if (circSel) {
+    const prev = circSel.value;
+    circSel.innerHTML = `
+      <option value="municipal_inteiro">Município inteiro</option>
+      <option value="municipal_regional">Regional (sub-municipal)</option>
+    `;
+    circSel.value = (prev === 'municipal_regional') ? 'municipal_regional' : 'municipal_inteiro';
+    circVal = circSel.value;
+  }
+  display('circumscriptionSection', true);
+
+  // Cláusulas: geral sempre; circunscricional só no regional
+  display('federalBarrierSection', true);
+  display('stateBarrierSection', circVal === 'municipal_regional');
+
+  // Base de votos: vereador/prefeito
+  updateVoteBaseOptions();
+}
+
 // Update vote base options based on election level
 function updateVoteBaseOptions() {
   const selectVoteBase = document.getElementById('selectVoteBase');
@@ -3041,9 +3220,36 @@ function updateVoteBaseOptions() {
         selectVoteBase.value = `estadual_${year}`;
       }
     }
+  } else if (level === 'municipal') {
+    // Only rebuild if not already showing municipal options
+    if (!selectVoteBase.querySelector('option[value="vereador_2024"]')) {
+      selectVoteBase.innerHTML = `
+        <optgroup label="Eleições para Vereador">
+          <option value="vereador_2024">Vereador 2024</option>
+          <option value="vereador_2020">Vereador 2020</option>
+          <option value="vereador_2016">Vereador 2016</option>
+          <option value="vereador_2012">Vereador 2012</option>
+          <option value="vereador_2008">Vereador 2008</option>
+        </optgroup>
+        <optgroup label="Eleições para Prefeito (1º turno)">
+          <option value="prefeito_2024">Prefeito 2024 (1º Turno)</option>
+          <option value="prefeito_2020">Prefeito 2020 (1º Turno)</option>
+          <option value="prefeito_2016">Prefeito 2016 (1º Turno)</option>
+          <option value="prefeito_2012">Prefeito 2012 (1º Turno)</option>
+          <option value="prefeito_2008">Prefeito 2008 (1º Turno)</option>
+        </optgroup>
+      `;
+      // Mapeia para o ciclo municipal mais próximo, preservando cargo (exec -> prefeito)
+      const yearMatch = currentValue.match(/(\d{4})/);
+      let year = yearMatch ? parseInt(yearMatch[1]) : 2024;
+      if (![2008, 2012, 2016, 2020, 2024].includes(year)) year = 2024;
+      const isExec = currentValue.startsWith('presidente') || currentValue.startsWith('governador') || currentValue.startsWith('prefeito');
+      const targetVal = isExec ? `prefeito_${year}` : `vereador_${year}`;
+      selectVoteBase.value = selectVoteBase.querySelector(`option[value="${targetVal}"]`) ? targetVal : `vereador_${year}`;
+    }
   } else {
-    // Only restore if currently showing estadual options
-    if (selectVoteBase.querySelector('option[value="estadual_2022"]')) {
+    // Only restore if currently showing estadual OR municipal options
+    if (selectVoteBase.querySelector('option[value="estadual_2022"]') || selectVoteBase.querySelector('option[value="vereador_2024"]')) {
       selectVoteBase.innerHTML = `
         <optgroup label="Eleições Presidenciais">
           <option value="presidente_2022">Presidente 2022 (1º Turno)</option>
@@ -3060,10 +3266,11 @@ function updateVoteBaseOptions() {
           <option value="deputado_2006">Deputado Federal 2006</option>
         </optgroup>
       `;
-      // Map: governador -> presidente, estadual -> deputado
+      // Map: governador/prefeito -> presidente, estadual/vereador -> deputado
       const yearMatch = currentValue.match(/(\d{4})/);
-      const year = yearMatch ? yearMatch[1] : '2022';
-      const isExec = currentValue.startsWith('governador');
+      let year = yearMatch ? parseInt(yearMatch[1]) : 2022;
+      if (![2006, 2010, 2014, 2018, 2022].includes(year)) year = 2022; // ciclos federais
+      const isExec = currentValue.startsWith('governador') || currentValue.startsWith('prefeito');
       const targetVal = isExec ? `presidente_${year}` : `deputado_${year}`;
       if (selectVoteBase.querySelector(`option[value="${targetVal}"]`)) {
         selectVoteBase.value = targetVal;
@@ -3081,6 +3288,16 @@ function runSimulation() {
   // If estadual level AND a state is selected, delegate to state-level simulation
   if (currentConfig.electionLevel === 'estadual' && currentConfig.electionState) {
     runStateSimulation();
+    return;
+  }
+
+  // Municipal (capitais): delega para a simulação municipal
+  if (currentConfig.electionLevel === 'municipal') {
+    if (currentConfig.electionCapital) {
+      runMunicipalSimulation();
+    } else {
+      nationalSimulationResults = null;
+    }
     return;
   }
 
@@ -4081,6 +4298,195 @@ function runStateRegionalSimulation(uf, totalSeats, partyVotes, totalValidVotes,
 }
 
 // =========================================================
+// MUNICIPAL (CAPITAIS) SIMULATION
+// =========================================================
+function runMunicipalSimulation() {
+  const cap = currentConfig.electionCapital;
+  const calcMethod = currentConfig.calcMethod;
+  const circ = currentConfig.circumscription; // 'municipal_inteiro' | 'municipal_regional'
+  const seatRule = currentConfig.seatDistribution; // 'real_municipal' | 'alt_municipal'
+  const toggleFederalBarrier = currentConfig.toggleFederalBarrier;
+  const valFederalBarrier = currentConfig.valFederalBarrier;
+
+  const electionKey = document.getElementById('selectVoteBase')?.value || 'vereador_2024';
+  const yearMatch = electionKey.match(/(\d{4})/);
+  const year = yearMatch ? parseInt(yearMatch[1]) : 2024;
+  currentYear = year; // garante federação (2022+) correta em getStandardFederationKey
+
+  const seatsInfo = municipalSeatsData ? municipalSeatsData[cap] : null;
+  if (!municipalVotosData || !seatsInfo) {
+    nationalSimulationResults = null;
+    return;
+  }
+
+  // Total de cadeiras: realista (ano) ou alternativa (print)
+  let totalSeats;
+  if (seatRule === 'alt_municipal') {
+    totalSeats = seatsInfo.alt;
+  } else {
+    totalSeats = (seatsInfo.real && seatsInfo.real[String(year)]) || seatsInfo.alt;
+  }
+
+  // Votos da cidade inteira por partido (normaliza federação por ano)
+  const cityVotesRaw = municipalVotosData[cap] ? municipalVotosData[cap][electionKey] : null;
+  const partyVotes = {};
+  let totalValidVotes = 0;
+  if (cityVotesRaw) {
+    for (const [party, votes] of Object.entries(cityVotesRaw)) {
+      if (party === 'VOTOS_BRANCOS' || party === 'VOTOS_NULOS' || party === 'TOTAL_VOTOS_VALIDOS') continue;
+      const stdKey = year >= 2022 ? getStandardFederationKey(party) : getStandardFederationKey(party, true);
+      partyVotes[stdKey] = (partyVotes[stdKey] || 0) + votes;
+      totalValidVotes += votes;
+    }
+  }
+
+  // Cláusula geral (cidade inteira)
+  const eligibleParties = new Set();
+  const partyPct = {};
+  for (const [party, votes] of Object.entries(partyVotes)) {
+    const pct = totalValidVotes > 0 ? (votes / totalValidVotes) * 100 : 0;
+    partyPct[party] = pct;
+    if (!toggleFederalBarrier || pct >= valFederalBarrier) {
+      eligibleParties.add(party);
+    }
+  }
+
+  if (circ === 'municipal_regional') {
+    runMunicipalRegionalSimulation(cap, totalSeats, partyVotes, totalValidVotes, eligibleParties, partyPct, electionKey, year, seatsInfo);
+    return;
+  }
+
+  // Município inteiro — uma única circunscrição
+  const eligiblePartyList = Array.from(eligibleParties)
+    .map(party => ({ party, votes: partyVotes[party] || 0 }))
+    .filter(p => p.votes > 0);
+  const seatsWon = allocateSeatsGeneric(totalSeats, eligiblePartyList, calcMethod);
+
+  nationalSimulationResults = {
+    stateSeats: { [cap]: totalSeats },
+    stateAllocations: { [cap]: seatsWon },
+    constituencySeats: null, constituencyAllocations: null, partyCompSeats: null,
+    nationalSeats: { ...seatsWon },
+    partyNationalVotes: partyVotes,
+    partyNationalPct: partyPct,
+    nationalValidVotes: totalValidVotes,
+    regionalAllocations: {},
+    subregionSeats: {}, subregionAllocations: {}
+  };
+}
+
+// Reparte totalSeats entre as regiões DIST03 por população (Hare) e aloca por região
+function runMunicipalRegionalSimulation(cap, totalSeats, partyVotes, totalValidVotes, eligibleParties, partyPct, electionKey, year, seatsInfo) {
+  const calcMethod = currentConfig.calcMethod;
+  const toggleStateBarrier = currentConfig.toggleStateBarrier;
+  const valStateBarrier = currentConfig.valStateBarrier;
+
+  const regioes = seatsInfo.regioes || {};
+  const distList = Object.keys(regioes).map(d => parseInt(d)).sort((a, b) => a - b);
+
+  // Sem regiões: trata como município inteiro
+  if (distList.length === 0) {
+    const list = Array.from(eligibleParties).map(p => ({ party: p, votes: partyVotes[p] || 0 })).filter(p => p.votes > 0);
+    const seatsWon = allocateSeatsGeneric(totalSeats, list, calcMethod);
+    nationalSimulationResults = {
+      stateSeats: { [cap]: totalSeats }, stateAllocations: { [cap]: seatsWon },
+      constituencySeats: null, constituencyAllocations: null, partyCompSeats: null,
+      nationalSeats: { ...seatsWon }, partyNationalVotes: partyVotes, partyNationalPct: partyPct,
+      nationalValidVotes: totalValidVotes, regionalAllocations: {}, subregionSeats: {}, subregionAllocations: {}
+    };
+    return;
+  }
+
+  // Reparte cadeiras por população (maior resto / Hare)
+  const subSeats = {};
+  if (distList.length === 1) {
+    subSeats[distList[0]] = totalSeats;
+  } else {
+    const totalPop = distList.reduce((s, d) => s + (regioes[d] || 0), 0);
+    const Q = totalPop / totalSeats;
+    let allocated = 0;
+    const remainders = [];
+    distList.forEach(d => {
+      const initial = Q > 0 ? Math.floor((regioes[d] || 0) / Q) : 0;
+      subSeats[d] = initial;
+      allocated += initial;
+      remainders.push({ d, rem: Q > 0 ? (regioes[d] || 0) % Q : 0, pop: regioes[d] || 0 });
+    });
+    remainders.sort((a, b) => Math.abs(b.rem - a.rem) > 1e-9 ? b.rem - a.rem : b.pop - a.pop);
+    let idx = 0;
+    while (allocated < totalSeats && remainders.length) {
+      subSeats[remainders[idx % remainders.length].d]++;
+      allocated++; idx++;
+    }
+  }
+
+  const subregionSeats = {};
+  const subregionAllocations = {};
+  const nationalSeats = {};
+  const capAllocations = {};
+
+  for (const d of distList) {
+    const subName = `${cap}-${d}`;
+    const capacity = subSeats[d] || 0;
+    subregionSeats[subName] = capacity;
+    if (capacity <= 0) { subregionAllocations[subName] = {}; continue; }
+
+    const subData = municipalVotosData[subName] ? municipalVotosData[subName][electionKey] : null;
+    const subVotes = {};
+    if (subData) {
+      let subTotal = 0;
+      for (const [party, votes] of Object.entries(subData)) {
+        if (party === 'VOTOS_BRANCOS' || party === 'VOTOS_NULOS' || party === 'TOTAL_VOTOS_VALIDOS') continue;
+        const stdKey = year >= 2022 ? getStandardFederationKey(party) : getStandardFederationKey(party, true);
+        if (!eligibleParties.has(stdKey)) continue;
+        subTotal += votes;
+      }
+      for (const [party, votes] of Object.entries(subData)) {
+        if (party === 'VOTOS_BRANCOS' || party === 'VOTOS_NULOS' || party === 'TOTAL_VOTOS_VALIDOS') continue;
+        const stdKey = year >= 2022 ? getStandardFederationKey(party) : getStandardFederationKey(party, true);
+        if (!eligibleParties.has(stdKey)) continue;
+        if (toggleStateBarrier && subTotal > 0) {
+          if ((votes / subTotal) * 100 < valStateBarrier) continue;
+        }
+        subVotes[stdKey] = (subVotes[stdKey] || 0) + votes;
+      }
+    }
+
+    let eligibleSub = Object.entries(subVotes).map(([party, votes]) => ({ party, votes })).filter(p => p.votes > 0);
+    let seatsWon;
+    if (eligibleSub.length > 0) {
+      seatsWon = allocateSeatsGeneric(capacity, eligibleSub, calcMethod);
+    } else {
+      // Fallback: usa votos da cidade inteira se a região não tem dados
+      const cityList = Object.entries(partyVotes).map(([party, votes]) => ({ party, votes }))
+        .filter(p => eligibleParties.has(p.party) && p.votes > 0);
+      seatsWon = allocateSeatsGeneric(capacity, cityList, calcMethod);
+    }
+
+    subregionAllocations[subName] = seatsWon;
+    for (const [party, count] of Object.entries(seatsWon)) {
+      if (count > 0) {
+        if (!capAllocations[cap]) capAllocations[cap] = {};
+        capAllocations[cap][party] = (capAllocations[cap][party] || 0) + count;
+        nationalSeats[party] = (nationalSeats[party] || 0) + count;
+      }
+    }
+  }
+
+  nationalSimulationResults = {
+    stateSeats: { [cap]: totalSeats },
+    stateAllocations: capAllocations,
+    constituencySeats: null, constituencyAllocations: null, partyCompSeats: null,
+    nationalSeats,
+    partyNationalVotes: partyVotes,
+    partyNationalPct: partyPct,
+    nationalValidVotes: totalValidVotes,
+    regionalAllocations: {},
+    subregionSeats, subregionAllocations
+  };
+}
+
+// =========================================================
 // NATIONAL CIRCUMSCRIPTION SIMULATION (single national pool)
 // =========================================================
 function runNationalCircumscriptionSimulation() {
@@ -4798,8 +5204,9 @@ function drawChamber(totalSeats, partyAllocations, partyVotes, totalVotes) {
     }
   });
 
-  const useSemicircle = (selectedState === null && selectedRegion === null && selectedSubregion === null) ||
-    (currentElectionLevel === 'estadual' && selectedSubregion === null && selectedRegion === null);
+  const useSemicircle = (selectedState === null && selectedRegion === null && selectedSubregion === null && selectedMunicipalRegion === null) ||
+    (currentElectionLevel === 'estadual' && selectedSubregion === null && selectedRegion === null) ||
+    (currentElectionLevel === 'municipal' && selectedMunicipalRegion === null);
   const seatsData = useSemicircle ? getSemicircleSeats(totalSeats) : getRectangularSeats(totalSeats);
   const seatsGroup = createSvgEl('g', { class: 'chamber-seats' });
 
@@ -4933,6 +5340,188 @@ function highlightPartySeats(partyKey) {
 }
 
 // Render Results list (Right Panel)
+// Painel de resultados do modo municipal (capitais)
+function renderMunicipalResultsList() {
+  const resultsList = document.getElementById('resultsList');
+  const resultsTitle = document.getElementById('resultsTitle');
+  const resultsSubtitle = document.getElementById('resultsSubtitle');
+  const simMetrics = document.getElementById('simMetrics');
+  if (simMetrics) simMetrics.innerHTML = '';
+  resultsList.innerHTML = '';
+
+  const cap = currentConfig.electionCapital;
+  if (!cap || !nationalSimulationResults) {
+    if (resultsTitle) resultsTitle.textContent = 'Municipal (Capitais)';
+    if (resultsSubtitle) resultsSubtitle.textContent = 'Selecione uma capital';
+    resultsList.innerHTML = '<div class="help-text" style="padding:20px;text-align:center;">Selecione uma capital para simular a câmara municipal.</div>';
+    drawChamber(0, {}, {}, 0);
+    return;
+  }
+
+  const { stateSeats, nationalSeats, partyNationalVotes, nationalValidVotes } = nationalSimulationResults;
+  const totalSeats = Object.values(stateSeats || {}).reduce((s, v) => s + v, 0) || 0;
+  const electionKey = document.getElementById('selectVoteBase')?.value || 'vereador_2024';
+  const isVereador = electionKey.startsWith('vereador');
+  const yr = (electionKey.match(/(\d{4})/) || [])[1] || '';
+  const isRegional = currentConfig.circumscription === 'municipal_regional';
+  const baseLabel = isVereador ? `Vereador ${yr}` : `Prefeito ${yr} (1º turno)`;
+
+  // ── Drill-down: região municipal selecionada ──
+  if (selectedMunicipalRegion !== null && isRegional) {
+    const subAlloc = (nationalSimulationResults.subregionAllocations || {});
+    const subSeatsMap = (nationalSimulationResults.subregionSeats || {});
+    const regionSeats = subSeatsMap[selectedMunicipalRegion] || 0;
+    const regionAlloc = subAlloc[selectedMunicipalRegion] || {};
+    const lastDash = selectedMunicipalRegion.lastIndexOf('-');
+    const distNum = lastDash >= 0 ? selectedMunicipalRegion.slice(lastDash + 1) : '1';
+
+    const voteMap = getMunicipalRegionVoteMap(cap, distNum);
+    let regionValidVotes = 0;
+    for (const v of Object.values(voteMap)) regionValidVotes += v;
+
+    const seatsInfo = municipalSeatsData ? municipalSeatsData[cap] : null;
+    const pop = seatsInfo && seatsInfo.regioes && seatsInfo.regioes[distNum] ? seatsInfo.regioes[distNum] : 0;
+
+    if (resultsTitle) resultsTitle.textContent = `${cap} — Região ${distNum}`;
+    if (resultsSubtitle) resultsSubtitle.textContent = `Circunscrição Regional — ${regionSeats} vagas`;
+
+    const qeR = regionSeats > 0 && regionValidVotes > 0 ? Math.round(regionValidVotes / regionSeats) : 0;
+    const headerBlock = document.createElement('div');
+    headerBlock.style.cssText = 'background:#1c1c1c;border:1px solid var(--border-color);padding:12px;margin-bottom:16px;border-radius:var(--radius-md);';
+    headerBlock.innerHTML = `
+      <div style="display:inline-block;font-size:10px;font-weight:700;color:#fff;background:var(--accent);padding:2px 6px;margin-bottom:6px;letter-spacing:0.5px;border-radius:2px;">CIRCUNSCRIÇÃO REGIONAL</div>
+      <div style="font-family:var(--font-title);font-size:1.1rem;font-weight:700;line-height:1.3;color:#fff;margin-bottom:4px;">${cap} — Região ${distNum}</div>
+      <div style="font-size:12px;color:var(--text-sec);">Vagas: <strong>${regionSeats}</strong>. QE: <strong>${fmtInt(qeR)}</strong>.${pop > 0 ? ` Pop.: <strong>${fmtInt(pop)}</strong> hab.` : ''}</div>
+    `;
+    resultsList.appendChild(headerBlock);
+
+    const sortedSubParties = Object.keys(voteMap)
+      .map(party => ({
+        party,
+        seats: regionAlloc[party] || 0,
+        votes: voteMap[party] || 0,
+        pct: regionValidVotes > 0 ? (voteMap[party] / regionValidVotes) * 100 : 0,
+        color: getPartyColor(party),
+        cleanName: getCleanGroupName(party)
+      }))
+      .filter(p => p.seats > 0 || p.votes > 0)
+      .sort((a, b) => b.seats - a.seats || b.votes - a.votes);
+
+    if (sortedSubParties.length === 0) {
+      resultsList.innerHTML += '<div class="help-text" style="padding:20px;text-align:center;">Nenhum partido conquistou vagas nesta região.</div>';
+    } else {
+      const staticHeader = document.createElement('div');
+      staticHeader.style.cssText = 'display:flex;padding:6px 14px;border-bottom:1px solid var(--border-color);font-size:11px;color:var(--text-sec);font-weight:600;padding-left:14px;margin-bottom:8px;';
+      staticHeader.innerHTML = `
+        <div style="flex:1;text-align:left;">Partido</div>
+        <div style="width:50px;text-align:right;">Vagas</div>
+        <div style="width:100px;text-align:right;padding-right:8px;">% Votos</div>
+        <div style="width:80px;text-align:right;">Votos</div>
+      `;
+      resultsList.appendChild(staticHeader);
+
+      let rowsHtml = '';
+      sortedSubParties.forEach(p => {
+        const votePctStr = p.pct.toFixed(1);
+        rowsHtml += `
+          <tr style="border-bottom:1px solid var(--border-color);transition:background 0.15s; ${p.seats === 0 ? 'opacity:0.55;' : ''}">
+            <td style="text-align:left;padding:8px 6px;border-left:4px solid ${p.color};">
+              <span style="font-weight:600;margin-left:4px;font-size:13px;">${p.cleanName}</span>
+            </td>
+            <td style="padding:8px 6px;text-align:right;font-weight:700;font-size:13px;color:var(--text);">${p.seats}</td>
+            <td style="padding:8px 6px;text-align:right;">
+              <div style="display:flex;align-items:center;gap:6px;justify-content:flex-end;">
+                <span style="font-weight:700;min-width:32px;font-size:11px;text-align:right;">${votePctStr}%</span>
+                <div style="width:40px;height:6px;background:#262626;border-radius:2px;overflow:hidden;flex-shrink:0;">
+                  <div style="width:${votePctStr}%;height:100%;background:${p.color};"></div>
+                </div>
+              </div>
+            </td>
+            <td style="padding:8px 6px;text-align:right;color:var(--text-sec);font-size:11px;">${fmtInt(p.votes)}</td>
+          </tr>
+        `;
+      });
+      const tableDiv = document.createElement('div');
+      tableDiv.innerHTML = `<table class="district-nyt-table" style="color:var(--text);border-collapse:collapse;width:100%;"><tbody>${rowsHtml}</tbody></table>`;
+      resultsList.appendChild(tableDiv);
+    }
+
+    drawChamber(regionSeats, regionAlloc, voteMap, regionValidVotes);
+    syncBackToNationalButton();
+    return;
+  }
+
+  if (resultsTitle) resultsTitle.textContent = cap;
+  if (resultsSubtitle) {
+    resultsSubtitle.textContent = `Câmara Municipal — ${totalSeats} vagas · ${baseLabel}` + (isRegional ? ' · Regional' : '');
+  }
+
+  const qe = totalSeats > 0 ? Math.round(nationalValidVotes / totalSeats) : 0;
+  const headerBlock = document.createElement('div');
+  headerBlock.style.cssText = 'background-color:#1c1c1c;border:1px solid var(--border-color);padding:12px;margin-bottom:16px;border-radius:var(--radius-md);';
+  headerBlock.innerHTML = `
+    <div style="display:inline-block;font-size:10px;font-weight:700;color:#fff;background:var(--accent);padding:2px 6px;margin-bottom:6px;letter-spacing:0.5px;border-radius:2px;">ELEIÇÃO MUNICIPAL</div>
+    <div style="font-family:var(--font-title);font-size:1.1rem;font-weight:700;line-height:1.3;color:#fff;margin-bottom:4px;">Câmara Municipal de ${cap}</div>
+    <div style="font-size:12px;color:var(--text-sec);">Vagas: <strong>${totalSeats}</strong>. Base: <strong>${baseLabel}</strong>. QE: <strong>${fmtInt(qe)}</strong>${isRegional ? '. Circunscrições regionais por população.' : ''}</div>
+  `;
+  resultsList.appendChild(headerBlock);
+
+  const sortedParties = Object.keys(partyNationalVotes || {})
+    .map(party => ({
+      party,
+      seats: (nationalSeats || {})[party] || 0,
+      votes: partyNationalVotes[party] || 0,
+      pct: nationalValidVotes > 0 ? (partyNationalVotes[party] / nationalValidVotes) * 100 : 0,
+      color: getPartyColor(party),
+      cleanName: getCleanGroupName(party)
+    }))
+    .filter(p => p.seats > 0 || p.votes > 0)
+    .sort((a, b) => b.seats - a.seats || b.votes - a.votes);
+
+  if (sortedParties.length === 0) {
+    resultsList.innerHTML += '<div class="help-text" style="padding:20px;text-align:center;">Nenhum partido conquistou vagas nesta simulação.</div>';
+    drawChamber(0, {}, {}, 0);
+    return;
+  }
+
+  const staticHeader = document.createElement('div');
+  staticHeader.style.cssText = 'display:flex;padding:6px 14px;border-bottom:1px solid var(--border-color);font-size:11px;color:var(--text-sec);font-weight:600;padding-left:38px;margin-bottom:8px;';
+  staticHeader.innerHTML = `
+    <div style="flex:1;text-align:left;">Partido</div>
+    <div style="width:50px;text-align:right;">Vagas</div>
+    <div style="width:100px;text-align:right;padding-right:8px;">% Votos</div>
+    <div style="width:80px;text-align:right;">Votos</div>
+  `;
+  resultsList.appendChild(staticHeader);
+
+  let rowsHtml = '';
+  sortedParties.forEach(p => {
+    const votePctStr = p.pct.toFixed(1);
+    rowsHtml += `
+      <tr style="border-bottom:1px solid var(--border-color);${p.seats === 0 ? 'opacity:0.55;' : ''}">
+        <td style="text-align:left;padding:8px 6px;border-left:4px solid ${p.color};">
+          <span style="font-weight:600;margin-left:4px;font-size:13px;">${p.cleanName}</span>
+        </td>
+        <td style="padding:8px 6px;text-align:right;font-weight:700;font-size:13px;color:var(--text);">${p.seats}</td>
+        <td style="padding:8px 6px;text-align:right;">
+          <div style="display:flex;align-items:center;gap:6px;justify-content:flex-end;">
+            <span style="font-weight:700;min-width:32px;font-size:11px;text-align:right;">${votePctStr}%</span>
+            <div style="width:40px;height:6px;background:#262626;border-radius:2px;overflow:hidden;flex-shrink:0;">
+              <div style="width:${votePctStr}%;height:100%;background:${p.color};"></div>
+            </div>
+          </div>
+        </td>
+        <td style="padding:8px 6px;text-align:right;color:var(--text-sec);font-size:11px;">${fmtInt(p.votes)}</td>
+      </tr>
+    `;
+  });
+  const tableDiv = document.createElement('div');
+  tableDiv.innerHTML = `<table class="district-nyt-table" style="color:var(--text);border-collapse:collapse;width:100%;"><tbody>${rowsHtml}</tbody></table>`;
+  resultsList.appendChild(tableDiv);
+
+  drawChamber(totalSeats, nationalSeats || {}, partyNationalVotes || {}, nationalValidVotes || 0);
+}
+
 function renderResultsList() {
   const resultsList = document.getElementById('resultsList');
   resultsList.innerHTML = '';
@@ -4941,6 +5530,11 @@ function renderResultsList() {
   const resultsSubtitle = document.getElementById('resultsSubtitle');
   const simMetrics = document.getElementById('simMetrics');
 
+  // Modo municipal (capitais)
+  if (currentConfig.electionLevel === 'municipal') {
+    renderMunicipalResultsList();
+    return;
+  }
 
   const { stateSeats, stateAllocations, nationalSeats, partyNationalVotes, partyNationalPct, nationalValidVotes } = nationalSimulationResults;
   let totalSimulationSeats = Object.values(stateSeats || {}).reduce((s, v) => s + v, 0) || 513;
@@ -5822,6 +6416,12 @@ function setCircleToggleVisible(visible) {
 async function redrawCircles() {
   if (currentConfig.seatDistribution === 'senado_regionalizado_1' || currentConfig.seatDistribution === 'senado_regionalizado_2') {
     await renderSenadoRegionalizadoSvgMapV3();
+    return;
+  }
+
+  // Municipal regional mode: redraw region circles
+  if (currentElectionLevel === 'municipal' && currentConfig.circumscription === 'municipal_regional') {
+    drawMunicipalRegionCircles();
     return;
   }
 
@@ -8512,10 +9112,19 @@ function syncBackToNationalButton() {
   if (!btnBack) return;
 
   const hasSelection = selectedState !== null || selectedRegion !== null
-    || selectedSubregion !== null || selectedDistrict !== null;
+    || selectedSubregion !== null || selectedDistrict !== null
+    || selectedMunicipalRegion !== null;
 
   if (!hasSelection) {
     btnBack.classList.add('hidden');
+    return;
+  }
+
+  // Municipal region drill-down: button returns to the capital's full view
+  if (currentElectionLevel === 'municipal' && selectedMunicipalRegion !== null) {
+    const capName = currentConfig.electionCapital || 'Capital';
+    btnBack.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>${capName}`;
+    btnBack.classList.remove('hidden');
     return;
   }
 
@@ -8529,7 +9138,202 @@ function syncBackToNationalButton() {
   btnBack.classList.remove('hidden');
 }
 
+// Mapa do modo municipal (capitais): município inteiro ou regiões DIST03
+function municipalTopParty(alloc, voteMap = {}) {
+  let best = null, maxSeats = -1, maxVotes = -1;
+  for (const [party, n] of Object.entries(alloc || {})) {
+    const votes = voteMap[party] || 0;
+    if (n > maxSeats || (n === maxSeats && votes > maxVotes)) {
+      maxSeats = n;
+      maxVotes = votes;
+      best = party;
+    }
+  }
+  return best;
+}
+
+// ── Dotplot / Setor circles sobre cada região municipal (replica drawSemilocalCircles) ──
+function drawMunicipalRegionCircles() {
+  clearStateCircles();
+  if (!municipalLayer || !nationalSimulationResults) return;
+  const cap = currentConfig.electionCapital;
+  if (!cap) return;
+  const isRegional = currentConfig.circumscription === 'municipal_regional';
+  if (!isRegional) return;
+
+  const subAlloc = nationalSimulationResults.subregionAllocations || {};
+  const subSeats = nationalSimulationResults.subregionSeats || {};
+
+  const maxS = Math.max(0, ...Object.values(subSeats).filter(v => v > 0));
+  const scenarioDotRadius = getDotRadiusForSeats(maxS);
+
+  municipalLayer.eachLayer(layer => {
+    const feature = layer.feature;
+    if (!feature || !feature.properties) return;
+    const d = feature.properties.dist03;
+    const subName = `${cap}-${d}`;
+    const seatsToAllocate = subSeats[subName] || 0;
+    if (seatsToAllocate <= 0) return;
+
+    const allocations = subAlloc[subName] || {};
+    const voteMap = getMunicipalRegionVoteMap(cap, d);
+    const { seatColors } = buildOrderedSeatColors(allocations, voteMap);
+
+    let center = layer.getBounds().getCenter();
+
+    let myIcon;
+    if (circleViewMode === 'dots') {
+      const dotsResult = createStateCircleDotsHTML(String(d), seatsToAllocate, seatColors, scenarioDotRadius);
+      myIcon = { className: 'state-parliament-circle state-parliament-dots', html: dotsResult.html };
+    } else {
+      const svgHtml = createStateCircleSVG(String(d), seatsToAllocate, seatColors);
+      myIcon = { className: 'state-parliament-circle', html: svgHtml };
+    }
+
+    const marker = glMarker(center, myIcon).addTo();
+    marker.__subName = subName;
+
+    marker.on('click', () => { selectMunicipalRegion(cap, d); });
+
+    if (selectedMunicipalRegion !== null && selectedMunicipalRegion !== subName) {
+      marker.setOpacity(0.15);
+    } else {
+      marker.setOpacity(1.0);
+    }
+
+    const tooltipHtml = getMunicipalRegionTooltipHtml(cap, d);
+    marker.bindTooltip(tooltipHtml, { className: 'district-nyt-tooltip', sticky: true });
+
+    stateCircleLayers.push(marker);
+  });
+
+  setCircleToggleVisible(true);
+}
+
+// ── Seleciona uma região municipal para drill-down (replica selectSubregion) ──
+function selectMunicipalRegion(cap, distNum) {
+  selectedMunicipalRegion = `${cap}-${distNum}`;
+  renderMunicipalResultsList();
+  syncBackToNationalButton();
+  // Dim other regions and highlight selected
+  if (municipalLayer) {
+    municipalLayer.eachLayer(layer => {
+      if (!layer.feature) return;
+      const d = layer.feature.properties.dist03;
+      const isSelected = `${cap}-${d}` === selectedMunicipalRegion;
+      layer.setStyle({
+        fillOpacity: isSelected ? 0.85 : 0.25,
+        opacity: isSelected ? 0.9 : 0.3
+      });
+    });
+  }
+  // Re-dim circle markers
+  stateCircleLayers.forEach(m => {
+    const sub = m.__subName;
+    if (sub) m.setOpacity(selectedMunicipalRegion !== null && selectedMunicipalRegion !== sub ? 0.15 : 1.0);
+  });
+}
+
+async function renderMunicipalMap() {
+  const minimapEl = document.getElementById('regionMiniMap');
+  if (minimapEl) minimapEl.classList.add('hidden');
+  const svgMapContainer = document.getElementById('svgMapContainer');
+  if (svgMapContainer) svgMapContainer.classList.add('hidden');
+  const mapEl = document.getElementById('map');
+  if (mapEl && mapEl.classList.contains('hidden')) {
+    mapEl.classList.remove('hidden');
+    if (mapObj) setTimeout(() => mapObj.resize(), 50);
+  }
+  setCircleToggleVisible(false);
+  syncBackToNationalButton();
+  if (!mapObj) return;
+
+  // Limpa camadas/decorações de outros modos
+  try { clearStateCircles(); } catch (e) { }
+  try { clearInsetOutlines(); } catch (e) { }
+  try { clearInsetMapLayers(); } catch (e) { }
+  if (estadosLayer) { glRemove(estadosLayer); estadosLayer = null; }
+  if (muniLayer) { glRemove(muniLayer); muniLayer = null; }
+  if (semilocalLayer) { glRemove(semilocalLayer); semilocalLayer = null; }
+  if (municipalLayer) { glRemove(municipalLayer); municipalLayer = null; }
+
+  const cap = currentConfig.electionCapital;
+  const seatsInfo = municipalSeatsData ? municipalSeatsData[cap] : null;
+  if (!cap || !seatsInfo) { if (tileLayer) tileLayer.setOpacity(0); return; }
+
+  if (tileLayer) tileLayer.setOpacity(1);
+  const zoomCtrl = document.querySelector('.maplibregl-ctrl-bottom-right');
+  if (zoomCtrl) zoomCtrl.style.display = 'block';
+
+  const isRegional = currentConfig.circumscription === 'municipal_regional';
+
+  if (isRegional && municipalCircuitosGeoJSON) {
+    const subAlloc = (nationalSimulationResults && nationalSimulationResults.subregionAllocations) || {};
+    const subSeats = (nationalSimulationResults && nationalSimulationResults.subregionSeats) || {};
+    const feats = municipalCircuitosGeoJSON.features.filter(f => f.properties.capital === cap);
+    if (feats.length === 0) return;
+    municipalLayer = glGeoJSON({ type: 'FeatureCollection', features: feats }, {
+      style: feature => {
+        const d = feature.properties.dist03;
+        const alloc = subAlloc[`${cap}-${d}`] || {};
+        const voteMap = getMunicipalRegionVoteMap(cap, d);
+        const winner = municipalTopParty(alloc, voteMap);
+        const color = winner ? getPartyColor(winner) : '#777777';
+        const sorted = Object.values(alloc).sort((a, b) => b - a);
+        const tot = sorted.reduce((s, v) => s + v, 0);
+        const pct = tot > 0 ? (sorted[0] / tot) * 100 : 0;
+        const isSelected = selectedMunicipalRegion === `${cap}-${d}`;
+        const isDimmed = selectedMunicipalRegion !== null && !isSelected;
+        return { fillColor: getUniversalGradientColor(color, pct), fillOpacity: isDimmed ? 0.25 : 0.85, color: '#111111', weight: 1.0, opacity: isDimmed ? 0.3 : 0.8 };
+      },
+      onEachFeature: (feature, layer) => {
+        const d = feature.properties.dist03;
+        // NYT-style tooltip (replicates getSubregionTooltipHtml)
+        layer.bindTooltip(getMunicipalRegionTooltipHtml(cap, d), { className: 'district-nyt-tooltip', sticky: true });
+        // Clickable districts (replicates selectSubregion)
+        layer.on('click', () => { selectMunicipalRegion(cap, d); });
+      }
+    }).addTo(mapObj);
+    if (municipalLayer && municipalLayer.getBounds && municipalLayer.getBounds().isValid()) {
+      glFitBounds(municipalLayer.getBounds(), [20, 20]);
+    }
+    // Draw dotplot/sector circles on top
+    drawMunicipalRegionCircles();
+    return;
+  }
+
+  // Município inteiro — geometria de municipios_<UF>.geojson (mesma do site, não generalizada)
+  const uf = seatsInfo.uf, cdMun = String(seatsInfo.cd_mun);
+  let muniGeo = cachedMuniGeoJSON[uf];
+  if (!muniGeo) {
+    try { muniGeo = await fetchGeoJSON(DATA_BASE_URL + `municipios/municipios_${uf}.geojson`); cachedMuniGeoJSON[uf] = muniGeo; }
+    catch (e) { muniGeo = null; }
+  }
+  if (!muniGeo) return;
+  const cityVoteMap = getMunicipalCityVoteMap(cap);
+  const overallWinner = municipalTopParty((nationalSimulationResults && nationalSimulationResults.nationalSeats) || {}, cityVoteMap);
+  const winColor = overallWinner ? getPartyColor(overallWinner) : '#777777';
+  const capFeats = muniGeo.features.filter(f => String(f.properties.CD_MUN) === cdMun);
+  if (capFeats.length === 0) return;
+  municipalLayer = glGeoJSON({ type: 'FeatureCollection', features: capFeats }, {
+    style: () => ({ fillColor: getUniversalGradientColor(winColor, 65), fillOpacity: 0.85, color: '#111111', weight: 1.2, opacity: 0.9 }),
+    onEachFeature: (feature, layer) => {
+      // NYT-style tooltip for whole city (replicates getStateTooltipHtml)
+      layer.bindTooltip(getMunicipalCityTooltipHtml(cap), { className: 'district-nyt-tooltip', sticky: true });
+    }
+  }).addTo(mapObj);
+  if (municipalLayer && municipalLayer.getBounds && municipalLayer.getBounds().isValid()) {
+    glFitBounds(municipalLayer.getBounds(), [30, 30]);
+  }
+}
+
 function renderMap() {
+  // Modo municipal (capitais): renderizador dedicado
+  if (currentElectionLevel === 'municipal') {
+    renderMunicipalMap();
+    return;
+  }
+
   // Clear regional-map insets/outlines, EXCEPT when the regional (semilocal) map is
   // about to render — there they are reused/restyled in place to avoid flicker.
   const willRenderSemilocal = currentSystemType !== 'distrital'
@@ -8927,6 +9731,14 @@ function fitNationalBounds() {
 
 // Reset state select
 function backToNational() {
+  // Municipal mode: if a region is selected, go back to the capital's full view
+  if (currentElectionLevel === 'municipal' && selectedMunicipalRegion !== null) {
+    selectedMunicipalRegion = null;
+    renderMunicipalResultsList();
+    renderMunicipalMap();
+    return;
+  }
+
   if (currentElectionLevel === 'estadual' && selectedState !== null && (selectedSubregion !== null || selectedRegion !== null || selectedDistrict !== null)) {
     selectedSubregion = null;
     selectedRegion = null;
@@ -8941,6 +9753,7 @@ function backToNational() {
   selectedDistrict = null;
   selectedRegion = null;
   selectedSubregion = null;
+  selectedMunicipalRegion = null;
 
   if (currentElectionLevel === 'estadual') {
     const selectStateEl = document.getElementById('selectElectionState');
@@ -9420,6 +10233,20 @@ async function initApp() {
       fetchGeoJSON(DATA_BASE_URL + 'semilocal_insets_main_map_outlines.geojson').catch(() => null),
       fetchGeoJSON(DATA_BASE_URL + 'semilocal_insets_unions.geojson').catch(() => null)
     ]);
+
+    // Municipal (capitais) — carregamento independente para não atrasar o boot nacional
+    Promise.all([
+      fetchGeoJSON(DATA_BASE_URL + 'municipal_capitais_votos.json').catch(() => null),
+      fetchGeoJSON(DATA_BASE_URL + 'municipal_capitais_circuitos.geojson').catch(() => null),
+      fetchGeoJSON(DATA_BASE_URL + 'municipal_capitais_seats.json').catch(() => null)
+    ]).then(([mVotos, mCircuitos, mSeats]) => {
+      if (mVotos) { municipalVotosData = mVotos; console.log(`Loaded municipal vote data (${Object.keys(mVotos).length} chaves).`); }
+      else console.warn('Could not load municipal_capitais_votos.json.');
+      if (mCircuitos) { municipalCircuitosGeoJSON = mCircuitos; console.log(`Loaded ${mCircuitos.features.length} municipal region geometries.`); }
+      else console.warn('Could not load municipal_capitais_circuitos.geojson.');
+      if (mSeats) { municipalSeatsData = mSeats; }
+      else console.warn('Could not load municipal_capitais_seats.json.');
+    });
     if (!statesGeo) throw new Error("Erro ao carregar o mapa base do Brasil.");
     estadosGeoJSON = statesGeo;
 
@@ -9556,6 +10383,7 @@ async function initApp() {
       selectedDistrict = null;
       selectedRegion = null;
       selectedSubregion = null;
+      selectedMunicipalRegion = null;
 
       if (level === 'estadual') {
         const stateSelect = document.getElementById('selectElectionState');
@@ -9600,6 +10428,7 @@ async function initApp() {
 
     // Circumscription selector (Nacional, Estadual, Regional)
     document.getElementById('selectCircumscription').addEventListener('change', () => {
+      selectedMunicipalRegion = null; // reset drill-down when changing circumscription
       updateConfigVisibility();
       runSimulation();
       renderResultsList();
@@ -9607,10 +10436,36 @@ async function initApp() {
       initPactometro();
     });
 
+    // Capital selector (modo Municipal)
+    const capitalSelect = document.getElementById('selectElectionCapital');
+    if (capitalSelect) {
+      capitalSelect.addEventListener('change', () => {
+        selectedMunicipalRegion = null; // reset drill-down when switching capitals
+        updateConfigVisibility(); // atualiza rótulos de cadeiras (realista/alt) p/ a capital
+        runSimulation();
+        renderResultsList();
+        renderMap();
+        initPactometro();
+      });
+    }
+
     document.getElementById('selectVoteBase').addEventListener('change', async (e) => {
       const [base, yearStr] = e.target.value.split('_');
       const selectedYear = parseInt(yearStr);
       const selectedBase = base;
+
+      // Modo municipal: dados já carregados em memória; só re-simula e atualiza rótulos
+      if (currentElectionLevel === 'municipal') {
+        selectedMunicipalRegion = null; // reset drill-down when changing vote base
+        currentVoteBase = selectedBase;
+        currentYear = selectedYear;
+        updateConfigVisibility();
+        runSimulation();
+        renderResultsList();
+        renderMap();
+        initPactometro();
+        return;
+      }
 
       const yearChanged = selectedYear !== currentYear;
       const baseChanged = selectedBase !== currentVoteBase;
