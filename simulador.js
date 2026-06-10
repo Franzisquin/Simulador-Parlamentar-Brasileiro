@@ -4150,7 +4150,10 @@ function runRegionalCircumscriptionSimulation() {
   const toggleStateBarrier = currentConfig.toggleStateBarrier;
   const valStateBarrier = currentConfig.valStateBarrier;
 
-  const stateSeats = getSeatsAllocationByState(seatDistribution);
+  const isDanish = seatDistribution === 'danish';
+  // In the compensatory (Danish) system only the 393 constituency seats are
+  // distributed across the districts; the remaining 120 are compensatory (national).
+  const stateSeats = isDanish ? getSeatsWithMinimum(393, 3) : getSeatsAllocationByState(seatDistribution);
   const electionKey = document.getElementById('selectVoteBase')?.value || 'deputado_2022';
   const useExactVotes = (semilocalVotosData !== null);
 
@@ -4294,10 +4297,34 @@ function runRegionalCircumscriptionSimulation() {
     }
   }
 
+  // Compensatory (Danish) top-up: the 393 district seats above are the constituency
+  // tier; compute the 120 national compensatory seats and form the compensatory circle.
+  let constituencySeats = null;
+  let constituencyAllocations = null;
+  let partyCompSeats = null;
+  if (isDanish) {
+    const partyConstituencySeats = {};
+    for (const seatsWon of Object.values(subregionAllocations)) {
+      for (const [party, count] of Object.entries(seatsWon)) {
+        if (count > 0) partyConstituencySeats[party] = (partyConstituencySeats[party] || 0) + count;
+      }
+    }
+
+    partyCompSeats = computeDanishCompensatory(partyConstituencySeats, partyNationalVotes, eligiblePartiesNational, calcMethod, 513);
+
+    // National totals = constituency (393) + compensatory (120) = 513.
+    for (const [party, comp] of Object.entries(partyCompSeats)) {
+      if (comp > 0) nationalSeats[party] = (nationalSeats[party] || 0) + comp;
+    }
+
+    constituencySeats = stateSeats;            // 393 per-state distribution (district tier)
+    constituencyAllocations = subregionAllocations; // district-level constituency winners
+  }
+
   nationalSimulationResults = {
     stateSeats,
     stateAllocations,
-    constituencySeats: null, constituencyAllocations: null, partyCompSeats: null,
+    constituencySeats, constituencyAllocations, partyCompSeats,
     nationalSeats,
     partyNationalVotes, partyNationalPct, nationalValidVotes,
     regionalAllocations: {},
@@ -4369,6 +4396,52 @@ function allocateSeatsGeneric(totalSeats, partyList, method) {
   }
 
   return seatsWon;
+}
+
+// Danish/MMP-style compensatory top-up. Given the constituency (district) seats each
+// party already won and their national votes, returns how many compensatory seats each
+// party should get so the full house is proportional, with overhang protection (a party
+// never loses constituency seats it already won). The compensatory seats sum to
+// totalSeats minus the total constituency seats (e.g. 513 − 393 = 120).
+function computeDanishCompensatory(partyConstituencySeats, partyNationalVotes, eligiblePartiesNational, calcMethod, totalSeats) {
+  let targetSeats = {};
+  let activeEligibleParties = new Set(eligiblePartiesNational);
+  let totalSeatsToAllocate = totalSeats;
+
+  while (true) {
+    if (totalSeatsToAllocate <= 0) {
+      targetSeats = { ...partyConstituencySeats };
+      break;
+    }
+    const partyList = Array.from(activeEligibleParties).map(party => ({ party, votes: partyNationalVotes[party] || 0 }));
+    const allocatedTargets = allocateSeatsGeneric(totalSeatsToAllocate, partyList, calcMethod);
+
+    let hasOverhang = false;
+    for (const party of activeEligibleParties) {
+      const constituency = partyConstituencySeats[party] || 0;
+      if (constituency > (allocatedTargets[party] || 0)) {
+        targetSeats[party] = constituency;
+        totalSeatsToAllocate -= constituency;
+        activeEligibleParties.delete(party);
+        hasOverhang = true;
+      }
+    }
+
+    if (!hasOverhang) {
+      for (const party of activeEligibleParties) {
+        targetSeats[party] = allocatedTargets[party] || 0;
+      }
+      break;
+    }
+  }
+
+  const partyCompSeats = {};
+  for (const party of eligiblePartiesNational) {
+    const target = targetSeats[party] || 0;
+    const constituency = partyConstituencySeats[party] || 0;
+    partyCompSeats[party] = Math.max(0, target - constituency);
+  }
+  return partyCompSeats;
 }
 
 // Semicircle Plenary Chamber drawer
@@ -5853,95 +5926,102 @@ function drawStateCircles() {
     stateCircleLayers.push(marker);
   }
 
-  // Draw national compensatory circle over the Atlantic Ocean
-  if (currentConfig.seatDistribution === 'danish') {
-    const cpSeats = 120;
-    const cpAllocations = nationalSimulationResults.partyCompSeats || {};
-
-    const { orderedParties: sortedCPParties, seatColors: cpSeatColors } = buildOrderedSeatColors(cpAllocations, nationalSimulationResults.partyNationalVotes || {});
-
-    const cpPos = [-28.0, -12.0]; // [lng, lat] — positioned in the Atlantic Ocean
-
-    let cpIcon;
-    if (circleViewMode === 'dots') {
-      const dotsResult = createStateCircleDotsHTML('CP', cpSeats, cpSeatColors, getDotRadiusForSeats(cpSeats));
-      cpIcon = {
-        className: 'state-parliament-circle compensatory-circle state-parliament-dots',
-        html: dotsResult.html
-      };
-    } else {
-      const svgHtml = createStateCircleSVG('CP', cpSeats, cpSeatColors);
-      cpIcon = {
-        className: 'state-parliament-circle compensatory-circle',
-        html: svgHtml
-      };
-    }
-
-    const cpMarker = glMarker(cpPos, cpIcon).addTo();
-
-    const cpWinner = sortedCPParties[0] ? sortedCPParties[0].party : null;
-    let cpRowsHtml = '';
-    sortedCPParties.forEach((p, idx) => {
-      const isWinner = p.party === cpWinner;
-      const pctStr = cpSeats > 0 ? ((p.seats / cpSeats) * 100).toFixed(2) : '0.00';
-
-      if (isWinner) {
-        cpRowsHtml += `
-          <tr>
-            <td style="padding: 0;">
-              <div class="district-nyt-winner-cell" style="background-color: ${p.color};">
-                <span>${getCleanGroupName(p.party)}</span>
-                <span style="font-size: 10px; margin-left: 6px;">✔</span>
-              </div>
-            </td>
-            <td style="color: var(--text);">${p.seats}</td>
-            <td style="font-weight: bold; color: var(--text);">${pctStr}%</td>
-          </tr>
-        `;
-      } else {
-        cpRowsHtml += `
-          <tr>
-            <td style="padding: 0;">
-              <div class="district-nyt-loser-cell" style="border-left-color: ${p.color};">
-                <span style="margin-left: 6px; color: var(--text);">${getCleanGroupName(p.party)}</span>
-              </div>
-            </td>
-            <td style="color: var(--text-sec);">${p.seats}</td>
-            <td style="font-weight: bold; color: var(--text);">${pctStr}%</td>
-          </tr>
-        `;
-      }
-    });
-
-    if (cpRowsHtml === '') {
-      cpRowsHtml = `<tr><td colspan="3" style="text-align:center;color:var(--muted);padding: 8px;">Nenhuma vaga conquistada</td></tr>`;
-    }
-
-    const cpTooltipHtml = `
-      <div class="nyt-tooltip-container" style="font-family: var(--font-main); color: var(--text); min-width: 250px;">
-        <div class="district-nyt-title">Círculo de Compensação Nacional</div>
-        <table class="district-nyt-table">
-          <thead>
-            <tr>
-              <th style="text-align: left;">Partido</th>
-              <th>Vagas</th>
-              <th>%</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${cpRowsHtml}
-          </tbody>
-        </table>
-        <div style="font-size: 11px; color: var(--muted); margin-top: 8px; border-top: 1px solid var(--border-color); padding-top: 6px; text-align: right;">Total: ${cpSeats} vagas de compensação</div>
-      </div>
-    `;
-    cpMarker.bindTooltip(cpTooltipHtml, { className: 'district-nyt-tooltip', sticky: true });
-
-    stateCircleLayers.push(cpMarker);
-  }
+  // National compensatory circle (Danish system) over the Atlantic Ocean
+  drawCompensatoryCircle();
 
   // Show the display-mode toggle when circles are visible
   setCircleToggleVisible(true);
+}
+
+// Draws the national compensatory circle (120 seats) over the Atlantic when the
+// Danish compensatory system is active. Shared by the state map and the regional map.
+function drawCompensatoryCircle() {
+  if (currentConfig.seatDistribution !== 'danish' || !nationalSimulationResults) return;
+
+  const cpSeats = 120;
+  const cpAllocations = nationalSimulationResults.partyCompSeats || {};
+
+  const { orderedParties: sortedCPParties, seatColors: cpSeatColors } = buildOrderedSeatColors(cpAllocations, nationalSimulationResults.partyNationalVotes || {});
+
+  const cpPos = [-28.0, -12.0]; // [lng, lat] — positioned in the Atlantic Ocean
+
+  let cpIcon;
+  if (circleViewMode === 'dots') {
+    const dotsResult = createStateCircleDotsHTML('CP', cpSeats, cpSeatColors, getDotRadiusForSeats(cpSeats));
+    cpIcon = {
+      className: 'state-parliament-circle compensatory-circle state-parliament-dots',
+      html: dotsResult.html
+    };
+  } else {
+    const svgHtml = createStateCircleSVG('CP', cpSeats, cpSeatColors);
+    cpIcon = {
+      className: 'state-parliament-circle compensatory-circle',
+      html: svgHtml
+    };
+  }
+
+  const cpMarker = glMarker(cpPos, cpIcon).addTo();
+  cpMarker.__isCP = true; // national pool — never dimmed by subregion selection
+
+  const cpWinner = sortedCPParties[0] ? sortedCPParties[0].party : null;
+  let cpRowsHtml = '';
+  sortedCPParties.forEach((p, idx) => {
+    const isWinner = p.party === cpWinner;
+    const pctStr = cpSeats > 0 ? ((p.seats / cpSeats) * 100).toFixed(2) : '0.00';
+
+    if (isWinner) {
+      cpRowsHtml += `
+        <tr>
+          <td style="padding: 0;">
+            <div class="district-nyt-winner-cell" style="background-color: ${p.color};">
+              <span>${getCleanGroupName(p.party)}</span>
+              <span style="font-size: 10px; margin-left: 6px;">✔</span>
+            </div>
+          </td>
+          <td style="color: var(--text);">${p.seats}</td>
+          <td style="font-weight: bold; color: var(--text);">${pctStr}%</td>
+        </tr>
+      `;
+    } else {
+      cpRowsHtml += `
+        <tr>
+          <td style="padding: 0;">
+            <div class="district-nyt-loser-cell" style="border-left-color: ${p.color};">
+              <span style="margin-left: 6px; color: var(--text);">${getCleanGroupName(p.party)}</span>
+            </div>
+          </td>
+          <td style="color: var(--text-sec);">${p.seats}</td>
+          <td style="font-weight: bold; color: var(--text);">${pctStr}%</td>
+        </tr>
+      `;
+    }
+  });
+
+  if (cpRowsHtml === '') {
+    cpRowsHtml = `<tr><td colspan="3" style="text-align:center;color:var(--muted);padding: 8px;">Nenhuma vaga conquistada</td></tr>`;
+  }
+
+  const cpTooltipHtml = `
+    <div class="nyt-tooltip-container" style="font-family: var(--font-main); color: var(--text); min-width: 250px;">
+      <div class="district-nyt-title">Círculo de Compensação Nacional</div>
+      <table class="district-nyt-table">
+        <thead>
+          <tr>
+            <th style="text-align: left;">Partido</th>
+            <th>Vagas</th>
+            <th>%</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${cpRowsHtml}
+        </tbody>
+      </table>
+      <div style="font-size: 11px; color: var(--muted); margin-top: 8px; border-top: 1px solid var(--border-color); padding-top: 6px; text-align: right;">Total: ${cpSeats} vagas de compensação</div>
+    </div>
+  `;
+  cpMarker.bindTooltip(cpTooltipHtml, { className: 'district-nyt-tooltip', sticky: true });
+
+  stateCircleLayers.push(cpMarker);
 }
 
 // Merge state geometries into region outlines using Turf.js
@@ -8288,6 +8368,7 @@ function drawSemilocalCircles(forceRebuild) {
   if (!forceRebuild && semilocalCircleSig === sig
       && semilocalCircleResults === nationalSimulationResults && stateCircleLayers.length > 0) {
     stateCircleLayers.forEach(m => {
+      if (m.__isCP) { m.setOpacity(1.0); return; } // compensatory circle stays full
       const sub = m.__subName;
       m.setOpacity(selectedSubregion !== null && selectedSubregion !== sub ? 0.15 : 1.0);
     });
@@ -8350,6 +8431,9 @@ function drawSemilocalCircles(forceRebuild) {
 
     stateCircleLayers.push(marker);
   });
+
+  // National compensatory circle (Danish system): the 120 compensatory seats.
+  drawCompensatoryCircle();
 
   // Show the toggle when circles are visible
   setCircleToggleVisible(true);
