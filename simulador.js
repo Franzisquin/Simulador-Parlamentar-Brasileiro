@@ -411,8 +411,18 @@ const _INSET_CHILD_IDS = new Set(
 );
 
 let insetsGeoJSONCache = null;
-let insetOutlineLayers = [];
-let insetMapLayers = [];
+let insetOutlineLayers = [];        // main-map dashed group outlines (static, persistent)
+let insetFilledLayers = {};         // groupId -> persistent filled GeoJSON handle (restyled in place)
+let insetChildOutlineLayers = [];   // dashed child-group outlines inside insets (static, persistent)
+let insetMarkerLayers = [];         // seat-circle DOM markers (rebuilt every render — no flicker)
+let insetGeomKey = null;            // geometry source the persistent inset layers were built from
+let insetLastResults = null;        // simulation-results object the inset visuals were built from
+let insetLastMode = null;           // circleViewMode the inset markers were built for
+
+// Main semilocal seat-circle markers — rebuilt only when results/mode/view change;
+// otherwise just their opacity is updated (selection highlight) to stay smooth.
+let semilocalCircleSig = null;
+let semilocalCircleResults = null;
 
 // Static geometry caches for performance optimization
 let semilocalInsetsMainMapOutlinesGeoJSON = null;
@@ -824,6 +834,20 @@ function glGeoJSON(data, opts) {
 
   handle.eachLayer = function (fn) { handle._layers.forEach(fn); };
 
+  // Update a feature's fill color/opacity via MapLibre feature-state. Unlike
+  // setStyle (which re-uploads the whole GeoJSON source via setData and briefly
+  // re-tiles), this is a GPU-side repaint with no flicker — ideal for selection
+  // highlights. Pass null to leave a channel unchanged. Also keeps the baked
+  // props in sync so a later setData/rebuild preserves the latest look.
+  handle.setFeatureFillState = function (idx, fillColor, fillOpacity) {
+    if (!mapObj || !mapObj.getSource(id)) return;
+    const st = {};
+    const props = handle._fc.features[idx] && handle._fc.features[idx].properties;
+    if (fillColor != null) { st.fc = fillColor; if (props) props.__fillColor = fillColor; }
+    if (fillOpacity != null) { st.fo = fillOpacity; if (props) props.__fillOpacity = fillOpacity; }
+    mapObj.setFeatureState({ source: id, id: idx }, st);
+  };
+
   handle.getBounds = function () {
     if (!baked.length) return __glBounds([NaN, NaN, NaN, NaN]);
     try { return __glBounds(turf.bbox(handle._fc)); }
@@ -842,7 +866,12 @@ function glGeoJSON(data, opts) {
     mapObj.addLayer({
       id: id + '-fill', type: 'fill', source: id,
       filter: ['!=', ['get', '__hidden'], true],
-      paint: { 'fill-color': ['get', '__fillColor'], 'fill-opacity': ['get', '__fillOpacity'] }
+      // Honor per-feature state (fc/fo) when set, so fill color/opacity can be
+      // updated via setFeatureState (GPU-only, no source re-tile / flicker).
+      paint: {
+        'fill-color': ['coalesce', ['feature-state', 'fc'], ['get', '__fillColor']],
+        'fill-opacity': ['coalesce', ['feature-state', 'fo'], ['get', '__fillOpacity']]
+      }
     });
     const linePaint = {
       'line-color': ['get', '__color'],
@@ -7555,19 +7584,48 @@ function getSemilocalFeatureStyle(feature) {
   return { fillColor: fillCol, fillOpacity: opacity, color: '#111111', weight: 0.8, opacity: 0.9 };
 }
 
+// The inset group that actually owns (renders in full, clickable) a district —
+// i.e. the group whose `districts` include it without it being a nested placeholder.
+function getOwningInsetGroup(subName) {
+  for (const [gid, g] of Object.entries(INSET_GROUPS)) {
+    if (!g.districts.includes(subName)) continue;
+    const nested = new Set();
+    (g.contains || []).forEach(cid => INSET_GROUPS[cid]?.districts.forEach(d => nested.add(d)));
+    if (!nested.has(subName)) return gid;
+  }
+  return null;
+}
+
+// Bounds (on the main map) of an inset district's transformed geometry, taken from
+// the persistent inset layer where it is drawn in full color.
+function getInsetSubregionBounds(subName) {
+  const gid = getOwningInsetGroup(subName);
+  if (!gid || !insetFilledLayers[gid]) return null;
+  let bounds = null;
+  insetFilledLayers[gid].eachLayer(layer => {
+    if (layer.feature && layer.feature.properties && layer.feature.properties.sub_name === subName) {
+      bounds = layer.getBounds();
+    }
+  });
+  return bounds;
+}
+
 // Fit the map to the selected subregion (or the whole semilocal layer when none).
 function fitSemilocalBounds(isRegionalNacional) {
   if (!semilocalLayer) return;
-  const isInsetSubregion = selectedSubregion !== null && getInsetDistrictSet().has(selectedSubregion);
-  if (isInsetSubregion) return;
 
   let targetBounds = null;
   if (selectedSubregion !== null) {
-    semilocalLayer.eachLayer(layer => {
-      if (layer.feature && layer.feature.properties && layer.feature.properties.sub_name === selectedSubregion) {
-        targetBounds = layer.getBounds();
-      }
-    });
+    if (getInsetDistrictSet().has(selectedSubregion)) {
+      // District shown inside an inset: frame its transformed (on-map) geometry.
+      targetBounds = getInsetSubregionBounds(selectedSubregion);
+    } else {
+      semilocalLayer.eachLayer(layer => {
+        if (layer.feature && layer.feature.properties && layer.feature.properties.sub_name === selectedSubregion) {
+          targetBounds = layer.getBounds();
+        }
+      });
+    }
   }
 
   if (targetBounds && targetBounds.isValid()) {
@@ -7608,13 +7666,22 @@ function renderDeputadosSemilocalLeafletMap() {
     && semilocalLayer.__semilocalFilterState === filterState;
 
   if (canReuse) {
+    // Only the selection (and occasionally the results) changed. Update fill via
+    // feature-state — no setData, so no re-tile/flicker even when the view stays put
+    // (e.g. clicking an inset). Colors/tooltips refresh only when results changed.
+    const resultsChanged = semilocalLayer.__lastResults !== nationalSimulationResults;
     semilocalLayer.eachLayer(layer => {
       if (!layer.feature || !layer.feature.properties) return;
-      const subName = layer.feature.properties.sub_name;
-      layer.setStyle(getSemilocalFeatureStyle(layer.feature));
-      layer.bindTooltip(getSubregionTooltipHtml(subName), { className: 'district-nyt-tooltip', sticky: true });
+      const s = getSemilocalFeatureStyle(layer.feature);
+      if (resultsChanged) {
+        semilocalLayer.setFeatureFillState(layer._idx, s.fillColor, s.fillOpacity);
+        layer.bindTooltip(getSubregionTooltipHtml(layer.feature.properties.sub_name), { className: 'district-nyt-tooltip', sticky: true });
+      } else {
+        semilocalLayer.setFeatureFillState(layer._idx, null, s.fillOpacity);
+      }
     });
-    drawSemilocalCircles();
+    semilocalLayer.__lastResults = nationalSimulationResults;
+    drawSemilocalCircles(false);
     fitSemilocalBounds(isRegionalNacional);
     return;
   }
@@ -7662,9 +7729,10 @@ function renderDeputadosSemilocalLeafletMap() {
   }).addTo(mapObj);
   semilocalLayer.__semilocalSrc = semilocalCircuitosGeoJSON;
   semilocalLayer.__semilocalFilterState = filterState;
+  semilocalLayer.__lastResults = nationalSimulationResults;
 
   // Draw seat circles for each regional circumscription (mode-aware)
-  drawSemilocalCircles();
+  drawSemilocalCircles(true);
   fitSemilocalBounds(isRegionalNacional);
 }
 
@@ -7693,9 +7761,27 @@ function clearInsetOutlines() {
   insetOutlineLayers = [];
 }
 
+// Markers only — cheap DOM nodes that are rebuilt every render.
+function clearInsetMarkers() {
+  insetMarkerLayers.forEach(l => { try { glRemove(l); } catch(e){} });
+  insetMarkerLayers = [];
+}
+
+// Persistent inset GeoJSON layers (filled polygons + dashed child outlines).
+function clearInsetGeoLayers() {
+  Object.values(insetFilledLayers).forEach(l => { try { glRemove(l); } catch(e){} });
+  insetFilledLayers = {};
+  insetChildOutlineLayers.forEach(l => { try { glRemove(l); } catch(e){} });
+  insetChildOutlineLayers = [];
+}
+
+// Full inset teardown (used when leaving the regional/national map).
 function clearInsetMapLayers() {
-  insetMapLayers.forEach(l => { try { glRemove(l); } catch(e){} });
-  insetMapLayers = [];
+  clearInsetMarkers();
+  clearInsetGeoLayers();
+  insetGeomKey = null;
+  insetLastResults = null;
+  insetLastMode = null;
 }
 
 function removeHoles(geomOrFeature) {
@@ -7717,10 +7803,11 @@ function removeHoles(geomOrFeature) {
   return cleanedGeom;
 }
 
-// Draw merged black outlines on the main map for top-level inset groups only
+// Draw merged black outlines on the main map for top-level inset groups only.
+// Static geometry/style — built once and kept across renders to avoid flicker.
 function drawInsetOutlines() {
-  clearInsetOutlines();
   if (!mapObj) return;
+  if (insetOutlineLayers.length > 0) return; // already drawn
 
   const outlines = semilocalInsetsMainMapOutlinesGeoJSON ? semilocalInsetsMainMapOutlinesGeoJSON.features : [];
   outlines.forEach(geom => {
@@ -7776,7 +7863,7 @@ function _filterFN(geom) {
   return ok.length ? { ...geom, coordinates: ok } : geom;
 }
 
-function _renderInsetGroup(groupId, geoSrc, subregionSeats, subregionAllocations) {
+function _renderInsetGroup(groupId, geoSrc, subregionSeats, subregionAllocations, rebuildGeo, resultsChanged, rebuildMarkers) {
   const group = INSET_GROUPS[groupId];
   if (!group) return;
   const { tgtLat, tgtLng, scale } = group;
@@ -7804,67 +7891,92 @@ function _renderInsetGroup(groupId, geoSrc, subregionSeats, subregionAllocations
   }
   if (!tFeatures || !tFeatures.length) return;
 
-  // 1) Filled polygons — styled with district borders
+  // Filled-polygon style (reused for initial build and in-place restyle)
   const hasSubregionSelection = selectedSubregion !== null;
-  const filledLayer = glGeoJSON({ type: 'FeatureCollection', features: tFeatures }, {
-    style: feat => {
-      const sub = feat.properties.sub_name;
-      if (nestedDistricts.has(sub)) {
-        return { fillColor: '#0e1016', fillOpacity: 0.85, color: '#111111', weight: 0.8, opacity: 0.9 };
-      }
-      const winner = getSubregionWinner(sub);
-      const col = winner ? getPartyColor(winner) : '#555555';
-      const alloc = subregionAllocations[sub] || {};
-      const vals = Object.values(alloc).sort((a, b) => b - a);
-      const sum = vals.reduce((s, v) => s + v, 0);
-      const pct = sum > 0 ? (vals[0] / sum) * 100 : 0;
-      
-      const isSelected = selectedSubregion === sub;
-      const fillOpacity = isSelected ? 1.0 : (hasSubregionSelection ? 0.35 : 0.9);
-      
-      return {
-        fillColor: getUniversalGradientColor(col, pct),
-        fillOpacity: fillOpacity,
-        color: '#111111',
-        weight: 0.8,
-        opacity: 0.9
-      };
-    },
-    onEachFeature: (feature, layer) => {
-      const subName = feature.properties.sub_name;
-      if (nestedDistricts.has(subName)) return; // child placeholders are not clickable
-      const tooltipHtml = getSubregionTooltipHtml(subName);
-      layer.bindTooltip(tooltipHtml, { className: 'district-nyt-tooltip', sticky: true });
-      layer.on('click', () => {
-        selectSubregion(subName);
-      });
+  const styleFeat = feat => {
+    const sub = feat.properties.sub_name;
+    if (nestedDistricts.has(sub)) {
+      return { fillColor: '#0e1016', fillOpacity: 0.85, color: '#111111', weight: 0.8, opacity: 0.9 };
     }
-  }).addTo(mapObj);
-  insetMapLayers.push(filledLayer);
+    const winner = getSubregionWinner(sub);
+    const col = winner ? getPartyColor(winner) : '#555555';
+    const alloc = subregionAllocations[sub] || {};
+    const vals = Object.values(alloc).sort((a, b) => b - a);
+    const sum = vals.reduce((s, v) => s + v, 0);
+    const pct = sum > 0 ? (vals[0] / sum) * 100 : 0;
+
+    const isSelected = selectedSubregion === sub;
+    const fillOpacity = isSelected ? 1.0 : (hasSubregionSelection ? 0.35 : 0.9);
+
+    return {
+      fillColor: getUniversalGradientColor(col, pct),
+      fillOpacity: fillOpacity,
+      color: '#111111',
+      weight: 0.8,
+      opacity: 0.9
+    };
+  };
+
+  // 1) Filled polygons — build once per geometry source, then update fill via
+  //    feature-state (GPU-only, no re-tile). Colors/tooltips refresh only when the
+  //    simulation results changed; selection-only changes touch just the opacity.
+  if (rebuildGeo || !insetFilledLayers[groupId]) {
+    insetFilledLayers[groupId] = glGeoJSON({ type: 'FeatureCollection', features: tFeatures }, {
+      style: styleFeat,
+      onEachFeature: (feature, layer) => {
+        const subName = feature.properties.sub_name;
+        if (nestedDistricts.has(subName)) return; // child placeholders are not clickable
+        layer.bindTooltip(getSubregionTooltipHtml(subName), { className: 'district-nyt-tooltip', sticky: true });
+        layer.on('click', () => {
+          selectSubregion(subName);
+        });
+      }
+    }).addTo(mapObj);
+  } else {
+    const filled = insetFilledLayers[groupId];
+    filled.eachLayer(layer => {
+      if (!layer.feature || !layer.feature.properties) return;
+      const sub = layer.feature.properties.sub_name;
+      const s = styleFeat(layer.feature);
+      if (resultsChanged) {
+        filled.setFeatureFillState(layer._idx, s.fillColor, s.fillOpacity);
+        if (!nestedDistricts.has(sub)) {
+          layer.bindTooltip(getSubregionTooltipHtml(sub), { className: 'district-nyt-tooltip', sticky: true });
+        }
+      } else {
+        filled.setFeatureFillState(layer._idx, null, s.fillOpacity);
+      }
+    });
+  }
 
   // 2) Solid black outer contour removed (districts already have borders mapped)
 
-  // 3) Dashed outlines for each child group's area inside this inset
-  for (const childId of group.contains) {
-    const childGroup = INSET_GROUPS[childId];
-    if (!childGroup) continue;
+  // 3) Dashed outlines for each child group's area inside this inset (static — build once)
+  if (rebuildGeo) {
+    for (const childId of group.contains) {
+      const childGroup = INSET_GROUPS[childId];
+      if (!childGroup) continue;
 
-    const cacheKey = groupId + '_' + childId;
-    const childUnion = cachedInsetChildUnions[cacheKey];
-    if (childUnion) {
-      const transformedChild = {
-        ...childUnion,
-        geometry: _transformGeom(childUnion.geometry, transformFn)
-      };
-      insetMapLayers.push(
-        glGeoJSON(transformedChild, {
-          style: { fillOpacity: 0, color: '#ffffff', weight: 1.2, opacity: 1.0, dashArray: '3,3' }
-        }).addTo(mapObj)
-      );
+      const cacheKey = groupId + '_' + childId;
+      const childUnion = cachedInsetChildUnions[cacheKey];
+      if (childUnion) {
+        const transformedChild = {
+          ...childUnion,
+          geometry: _transformGeom(childUnion.geometry, transformFn)
+        };
+        insetChildOutlineLayers.push(
+          glGeoJSON(transformedChild, {
+            style: { fillOpacity: 0, color: '#ffffff', weight: 1.2, opacity: 1.0, dashArray: '3,3' }
+          }).addTo(mapObj)
+        );
+      }
     }
   }
 
-  // 4) Circle markers for non-nested districts
+  // 4) Circle markers for non-nested districts (rebuilt only when results/mode change;
+  //    selection-only changes update their opacity in renderInsetLayers instead).
+  if (!rebuildMarkers) return;
+
   const maxN = Math.max(0, ...group.districts.map(d => subregionSeats[d] || 0));
   const dotR = getDotRadiusForSeats(maxN > 0 ? maxN : 9) * 0.65;
 
@@ -7891,6 +8003,7 @@ function _renderInsetGroup(groupId, geoSrc, subregionSeats, subregionAllocations
     }
 
     const marker = glMarker([tLng, tLat], myIcon).addTo();
+    marker.__subName = sub;
     if (selectedSubregion !== null && selectedSubregion !== sub) {
       marker.setOpacity(0.15);
     } else {
@@ -7898,20 +8011,48 @@ function _renderInsetGroup(groupId, geoSrc, subregionSeats, subregionAllocations
     }
     marker.on('click', () => selectSubregion(sub));
     marker.bindTooltip(getSubregionTooltipHtml(sub), { className: 'district-nyt-tooltip', sticky: true });
-    insetMapLayers.push(marker);
+    insetMarkerLayers.push(marker);
   });
 }
 
 function renderInsetLayers() {
-  clearInsetMapLayers();
   if (!nationalSimulationResults || !mapObj) return;
   const geoSrc = insetsGeoJSONCache || semilocalCircuitosGeoJSON;
   if (!geoSrc) return;
   const { subregionSeats, subregionAllocations } = nationalSimulationResults;
+
+  // What actually changed this render:
+  //  - rebuildGeo: geometry source changed (year/insets load) → rebuild GeoJSON layers.
+  //  - resultsChanged: new simulation results → refresh fill colors/tooltips/markers.
+  //  - modeChanged: dot/pizza toggle → marker contents differ.
+  // A plain selection change is none of these, so the polygons are only retinted via
+  // feature-state and the markers only change opacity — no source re-tile, no DOM churn.
+  const rebuildGeo = insetGeomKey !== geoSrc;
+  const resultsChanged = insetLastResults !== nationalSimulationResults;
+  const modeChanged = insetLastMode !== circleViewMode;
+  const rebuildMarkers = rebuildGeo || resultsChanged || modeChanged;
+
+  if (rebuildGeo) {
+    clearInsetGeoLayers();
+    insetGeomKey = geoSrc;
+  }
+  if (rebuildMarkers) clearInsetMarkers();
+
   // Every group (including nested) gets its own inset layer set
   for (const groupId of Object.keys(INSET_GROUPS)) {
-    _renderInsetGroup(groupId, geoSrc, subregionSeats, subregionAllocations);
+    _renderInsetGroup(groupId, geoSrc, subregionSeats, subregionAllocations, rebuildGeo, resultsChanged, rebuildMarkers);
   }
+
+  // Selection-only change: markers were kept — just update their opacity highlight.
+  if (!rebuildMarkers) {
+    insetMarkerLayers.forEach(m => {
+      const sub = m.__subName;
+      m.setOpacity(selectedSubregion !== null && selectedSubregion !== sub ? 0.15 : 1.0);
+    });
+  }
+
+  insetLastResults = nationalSimulationResults;
+  insetLastMode = circleViewMode;
 }
 
 // ── Legacy stub removed ───────────────────────────────────────────────────────
@@ -8115,7 +8256,10 @@ async function renderAllInsets() { /* removed — see renderInsetLayers */ }
 
 // ── Draw seat circles on the semilocal Leaflet map (mode-aware) ───────────────
 // Can be called independently to re-render when circleViewMode changes.
-function drawSemilocalCircles() {
+// Markers are rebuilt only when the results/mode/view change; on a plain selection
+// change (forceRebuild falsy and same signature) only their opacity is updated, so
+// clicking around stays smooth instead of recreating hundreds of DOM markers.
+function drawSemilocalCircles(forceRebuild) {
   if (!semilocalLayer || !nationalSimulationResults) return;
   const { subregionSeats, subregionAllocations } = nationalSimulationResults;
 
@@ -8129,9 +8273,6 @@ function drawSemilocalCircles() {
 
   const pizzaSizeScale = isRegionalNacional ? 0.6 : 1.0;
 
-  // Clear existing circle markers (but not the GeoJSON polygon layer)
-  clearStateCircles();
-
   // Draw merged outlines on main map + render inset GeoJSON layers
   if (isRegionalNacional) {
     drawInsetOutlines();
@@ -8140,6 +8281,24 @@ function drawSemilocalCircles() {
     clearInsetOutlines();
     clearInsetMapLayers();
   }
+
+  // Fast path: nothing about the markers themselves changed (only the selection) —
+  // just retint their opacity in place rather than rebuilding every marker.
+  const sig = circleViewMode + '|' + isRegionalNacional;
+  if (!forceRebuild && semilocalCircleSig === sig
+      && semilocalCircleResults === nationalSimulationResults && stateCircleLayers.length > 0) {
+    stateCircleLayers.forEach(m => {
+      const sub = m.__subName;
+      m.setOpacity(selectedSubregion !== null && selectedSubregion !== sub ? 0.15 : 1.0);
+    });
+    setCircleToggleVisible(true);
+    return;
+  }
+
+  // Rebuild markers from scratch.
+  clearStateCircles();
+  semilocalCircleSig = sig;
+  semilocalCircleResults = nationalSimulationResults;
 
   const insetDistricts = isRegionalNacional ? getInsetDistrictSet() : new Set();
 
@@ -8176,6 +8335,7 @@ function drawSemilocalCircles() {
     }
 
     const marker = glMarker(center, myIcon).addTo();
+    marker.__subName = subName;
 
     marker.on('click', () => { selectSubregion(subName); });
 
@@ -8286,8 +8446,14 @@ function syncBackToNationalButton() {
 }
 
 function renderMap() {
-  // Clear any existing regional map insets/outlines first
-  if (mapObj) {
+  // Clear regional-map insets/outlines, EXCEPT when the regional (semilocal) map is
+  // about to render — there they are reused/restyled in place to avoid flicker.
+  const willRenderSemilocal = currentSystemType !== 'distrital'
+    && currentConfig.seatDistribution !== 'senado_regionalizado_1'
+    && currentConfig.seatDistribution !== 'senado_regionalizado_2'
+    && currentConfig.circumscription === 'regional'
+    && !(currentElectionLevel === 'estadual' && selectedState === null);
+  if (mapObj && !willRenderSemilocal) {
     clearInsetOutlines();
     clearInsetMapLayers();
   }
