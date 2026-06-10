@@ -1122,6 +1122,46 @@ function getSubregionVoteMap(subName) {
   return votes;
 }
 
+function getSubregionWinnerVotePct(subName, winner) {
+  if (!winner) return 0;
+  const voteMap = getSubregionVoteMap(subName);
+  const totalVotes = Object.values(voteMap).reduce((s, v) => s + v, 0);
+  return totalVotes > 0 ? (voteMap[winner] || 0) / totalVotes * 100 : 0;
+}
+
+function getStateVoteMap(uf) {
+  const ufVotes = {};
+  if (currentElectionLevel === 'estadual' && uf === currentConfig.electionState && nationalSimulationResults) {
+    return nationalSimulationResults.partyNationalVotes || {};
+  }
+  const ufData = officialTotals[uf];
+  if (ufData && ufData.f) {
+    const coalitionMap = getPresCoalitionMap();
+    ufData.f.coalitions.forEach(c => {
+      let std = getStandardFederationKey(c.id);
+      if (currentConfig.groupByPresidentialCoalition && coalitionMap[std]) {
+        std = coalitionMap[std];
+      }
+      ufVotes[std] = (ufVotes[std] || 0) + c.votes;
+    });
+  }
+  return ufVotes;
+}
+
+function getStateWinnerVotePct(uf, winner) {
+  if (!winner) return 0;
+  const voteMap = getStateVoteMap(uf);
+  const totalVotes = Object.values(voteMap).reduce((s, v) => s + v, 0);
+  return totalVotes > 0 ? (voteMap[winner] || 0) / totalVotes * 100 : 0;
+}
+
+function getMunicipalRegionWinnerVotePct(cap, distNum, winner) {
+  if (!winner) return 0;
+  const voteMap = getMunicipalRegionVoteMap(cap, distNum);
+  const totalVotes = Object.values(voteMap).reduce((s, v) => s + v, 0);
+  return totalVotes > 0 ? (voteMap[winner] || 0) / totalVotes * 100 : 0;
+}
+
 function getStandardFederationKey(name, ignoreFederation = false) {
   const n = String(name || '').toUpperCase().trim();
 
@@ -1134,7 +1174,7 @@ function getStandardFederationKey(name, ignoreFederation = false) {
   else if (clean === 'PR' || clean === 'PL') partyKey = 'PL';
   else if (clean === 'PRB' || clean === 'REPUBLICANOS') partyKey = 'REPUBLICANOS';
   else if (clean === 'PPS' || clean === 'CIDADANIA') partyKey = 'CIDADANIA';
-  else if (clean === 'PTN' || clean === 'PODEMOS' || clean === 'PODE') partyKey = 'PODE';
+  else if (clean === 'PTN' || clean === 'PODEMOS' || clean === 'PODE' || (clean === 'PSC' && currentYear >= 2024)) partyKey = 'PODE';
   else if (clean === 'PTDOB' || clean === 'PT_DO_B' || clean === 'AVANTE') partyKey = 'AVANTE';
   else if (clean === 'PEN' || clean === 'PATRI' || clean === 'PATRIOTA') partyKey = 'PATRIOTA';
   else if (clean === 'PTC' || clean === 'AGIR') partyKey = 'AGIR';
@@ -1161,6 +1201,9 @@ function getPartyNameByNumber(candId, year = currentYear) {
   const id = String(candId || '').trim();
   if (id === '44') {
     return year < 2022 ? 'PRP' : 'UNIÃƒO';
+  }
+  if (id === '20' && year >= 2024) {
+    return 'PODE';
   }
   return PARTY_NUMBERS[id] || null;
 }
@@ -6147,21 +6190,7 @@ function getWinningPartyForUF(uf) {
       winner = party;
     } else if (seats === maxSeats && winner) {
       // Tie breaker: votes in state
-      let ufVotes = {};
-      if (currentElectionLevel === 'estadual') {
-        ufVotes = nationalSimulationResults.partyNationalVotes || {};
-      } else {
-        const coalitionMap = getPresCoalitionMap();
-        if (officialTotals[uf] && officialTotals[uf].f) {
-          officialTotals[uf].f.coalitions.forEach(c => {
-            let std = getStandardFederationKey(c.id);
-            if (currentConfig.groupByPresidentialCoalition && coalitionMap[std]) {
-              std = coalitionMap[std];
-            }
-            ufVotes[std] = (ufVotes[std] || 0) + c.votes;
-          });
-        }
-      }
+      const ufVotes = getStateVoteMap(uf);
       if ((ufVotes[party] || 0) > (ufVotes[winner] || 0)) {
         winner = party;
       }
@@ -7019,14 +7048,7 @@ async function renderSenadoRegionalizadoSvgMap() {
         const winner = getWinningPartyForUF(uf);
         const color = winner ? getPartyColor(winner) : '#777777';
 
-        let winnerPct = 0;
-        const ufAllocations = stateAllocations[uf] || {};
-        const sorted = Object.values(ufAllocations).sort((a, b) => b - a);
-        if (sorted.length > 0) {
-          const sumSeats = sorted.reduce((s, v) => s + v, 0);
-          winnerPct = sumSeats > 0 ? (sorted[0] / sumSeats) * 100 : 0;
-        }
-
+        const winnerPct = getStateWinnerVotePct(uf, winner);
         const fillCol = getUniversalGradientColor(color, winnerPct);
         path.setAttribute('fill', fillCol);
         path.style.fill = fillCol;
@@ -7245,14 +7267,7 @@ async function renderSenadoRegionalizadoSvgMapV2() {
 
       const winner = getWinningPartyForUF(uf);
       const color = winner ? getPartyColor(winner) : '#777777';
-      const ufAllocations = stateAllocations[uf] || {};
-      const sorted = Object.values(ufAllocations).sort((a, b) => b - a);
-      let winnerPct = 0;
-      if (sorted.length > 0) {
-        const sumSeats = sorted.reduce((s, v) => s + v, 0);
-        winnerPct = sumSeats > 0 ? (sorted[0] / sumSeats) * 100 : 0;
-      }
-
+      const winnerPct = getStateWinnerVotePct(uf, winner);
       const fillCol = getUniversalGradientColor(color, winnerPct);
       path.setAttribute('fill', fillCol);
       path.style.fill = fillCol;
@@ -7572,14 +7587,7 @@ async function renderSenadoRegionalizadoSvgMapV3() {
 
       const winner = getWinningPartyForUF(uf);
       const color = winner ? getPartyColor(winner) : '#777777';
-      const ufAllocations = stateAllocations[uf] || {};
-      const sorted = Object.values(ufAllocations).sort((a, b) => b - a);
-      let winnerPct = 0;
-      if (sorted.length > 0) {
-        const sumSeats = sorted.reduce((sum, value) => sum + value, 0);
-        winnerPct = sumSeats > 0 ? (sorted[0] / sumSeats) * 100 : 0;
-      }
-
+      const winnerPct = getStateWinnerVotePct(uf, winner);
       const fillCol = getUniversalGradientColor(color, winnerPct);
       path.setAttribute('fill', fillCol);
       path.style.fill = fillCol;
@@ -7617,11 +7625,11 @@ async function renderSenadoRegionalizadoSvgMapV3() {
       }));
       const regionTotalSeats = Object.values(allocations).reduce((sum, value) => sum + value, 0);
 
-      const sorted = Object.values(allocations).sort((a, b) => b - a);
+      const votesMap = regionVotes[region] || {};
       let winnerPct = 0;
-      if (sorted.length > 0) {
-        const sumSeats = sorted.reduce((sum, value) => sum + value, 0);
-        winnerPct = sumSeats > 0 ? (sorted[0] / sumSeats) * 100 : 0;
+      if (winner && votesMap[winner] !== undefined) {
+        const totalVotes = Object.values(votesMap).reduce((s, v) => s + v, 0);
+        winnerPct = totalVotes > 0 ? (votesMap[winner] / totalVotes) * 100 : 0;
       }
       const fillCol = getUniversalGradientColor(color, winnerPct);
 
@@ -8057,14 +8065,7 @@ async function renderDeputadosSemilocalSvgMap() {
       const winner = getSubregionWinner(subName);
       const color = winner ? getPartyColor(winner) : '#777777';
 
-      let winnerPct = 0;
-      const alloc = subregionAllocations[subName] || {};
-      const sorted = Object.values(alloc).sort((a, b) => b - a);
-      if (sorted.length > 0) {
-        const sumSeats = sorted.reduce((sum, value) => sum + value, 0);
-        winnerPct = sumSeats > 0 ? (sorted[0] / sumSeats) * 100 : 0;
-      }
-
+      const winnerPct = getSubregionWinnerVotePct(subName, winner);
       const fillCol = getUniversalGradientColor(color, winnerPct);
       path.setAttribute('fill', fillCol);
       path.style.fill = fillCol;
@@ -8250,13 +8251,7 @@ function getSemilocalFeatureStyle(feature) {
   const subregionAllocations = (nationalSimulationResults && nationalSimulationResults.subregionAllocations) || {};
   const winner = getSubregionWinner(subName);
   const color = winner ? getPartyColor(winner) : '#777777';
-  let winnerPct = 0;
-  const alloc = subregionAllocations[subName] || {};
-  const sorted = Object.values(alloc).sort((a, b) => b - a);
-  if (sorted.length > 0) {
-    const sumSeats = sorted.reduce((s, v) => s + v, 0);
-    winnerPct = sumSeats > 0 ? (sorted[0] / sumSeats) * 100 : 0;
-  }
+  const winnerPct = getSubregionWinnerVotePct(subName, winner);
   const fillCol = getUniversalGradientColor(color, winnerPct);
   const hasSubregionSelection = selectedSubregion !== null;
   const isSelected = selectedSubregion === subName;
@@ -8580,10 +8575,7 @@ function _renderInsetGroup(groupId, geoSrc, subregionSeats, subregionAllocations
     }
     const winner = getSubregionWinner(sub);
     const col = winner ? getPartyColor(winner) : '#555555';
-    const alloc = subregionAllocations[sub] || {};
-    const vals = Object.values(alloc).sort((a, b) => b - a);
-    const sum = vals.reduce((s, v) => s + v, 0);
-    const pct = sum > 0 ? (vals[0] / sum) * 100 : 0;
+    const pct = getSubregionWinnerVotePct(sub, winner);
 
     const isSelected = selectedSubregion === sub;
     const fillOpacity = isSelected ? 1.0 : (hasSubregionSelection ? 0.35 : 0.9);
@@ -8845,10 +8837,7 @@ function _legacyRemovedInsetPanel(groupId, hiresGeo, containerEl) {
     } else {
       const winner = getSubregionWinner(subName);
       const col = winner ? getPartyColor(winner) : '#555555';
-      const alloc = subregionAllocations[subName] || {};
-      const vals = Object.values(alloc).sort((a, b) => b - a);
-      const sum = vals.reduce((s, v) => s + v, 0);
-      const pct = sum > 0 ? (vals[0] / sum) * 100 : 0;
+      const pct = getSubregionWinnerVotePct(subName, winner);
       svgContent += `<path d="${d}" fill="${getUniversalGradientColor(col, pct)}" fill-opacity="0.9" stroke="#0d0e12" stroke-width="0.4"/>`;
     }
   });
@@ -9279,9 +9268,7 @@ async function renderMunicipalMap() {
         const voteMap = getMunicipalRegionVoteMap(cap, d);
         const winner = municipalTopParty(alloc, voteMap);
         const color = winner ? getPartyColor(winner) : '#777777';
-        const sorted = Object.values(alloc).sort((a, b) => b - a);
-        const tot = sorted.reduce((s, v) => s + v, 0);
-        const pct = tot > 0 ? (sorted[0] / tot) * 100 : 0;
+        const pct = getMunicipalRegionWinnerVotePct(cap, d, winner);
         const isSelected = selectedMunicipalRegion === `${cap}-${d}`;
         const isDimmed = selectedMunicipalRegion !== null && !isSelected;
         return { fillColor: getUniversalGradientColor(color, pct), fillOpacity: isDimmed ? 0.25 : 0.85, color: '#111111', weight: 1.0, opacity: isDimmed ? 0.3 : 0.8 };
@@ -9433,17 +9420,8 @@ function renderMap() {
         const winner = getWinningPartyForUF(sigla);
         const color = winner ? getPartyColor(winner) : '#777777';
 
-        // Calculate winner percentage of seats for styling
-        let winnerPct = 0;
-        const ufAllocations = (nationalSimulationResults && nationalSimulationResults.stateAllocations)
-          ? (nationalSimulationResults.stateAllocations[sigla] || {})
-          : {};
-        const sorted = Object.values(ufAllocations).sort((a, b) => b - a);
-        if (sorted.length > 0) {
-          const sumSeats = sorted.reduce((s, v) => s + v, 0);
-          winnerPct = sumSeats > 0 ? (sorted[0] / sumSeats) * 100 : 0;
-        }
-
+        // Calculate winner percentage of votes for styling
+        const winnerPct = getStateWinnerVotePct(sigla, winner);
         const fillCol = getUniversalGradientColor(color, winnerPct);
 
         return {
