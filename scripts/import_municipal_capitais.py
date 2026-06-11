@@ -99,6 +99,8 @@ def party_for_cand(cand_id, cand_names, year):
     if len(cid) <= 2:
         if cid == "44":
             return "PRP" if year < 2022 else "UNIÃO"
+        if cid == "25" and year >= 2024:
+            return "PRD"  # número 25 (ex-PFL/DEM) passou ao PRD em 2024
         sig = PARTY_NUMBERS.get(cid)
         return norm_party(sig) if sig else None
     meta = cand_names.get(cid)

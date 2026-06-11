@@ -153,7 +153,7 @@ const SENADO_SVG_REGION_CIRCLES = {
 const STATE_CIRCLE_CONFIGS = {
   "AC": { center: [-9.0, -70.0] },
   "AL": { center: [-9.6, -36.5], label: [-9.6, -33.5] },
-  "AP": { center: [1.4, -51.5] },
+  "AP": { center: [1.45, -51.96] },
   "AM": { center: [-4.0, -64.0] },
   "BA": { center: [-12.2, -41.5] },
   "CE": { center: [-5.2, -39.5] },
@@ -172,8 +172,8 @@ const STATE_CIRCLE_CONFIGS = {
   "RJ": { center: [-22.3, -42.8], label: [-22.8, -39.0] },
   "RN": { center: [-5.8, -36.5], label: [-4.0, -33.5] },
   "RS": { center: [-30.0, -53.5] },
-  "RO": { center: [-11.2, -62.5] },
-  "RR": { center: [2.0, -61.3] },
+  "RO": { center: [-10.91, -62.84] },
+  "RR": { center: [2.08, -61.39] },
   "SC": { center: [-27.2, -50.5], label: [-28.5, -47.0] },
   "SP": { center: [-22.3, -49.0] },
   "SE": { center: [-10.6, -37.0], label: [-11.2, -34.5] },
@@ -817,6 +817,40 @@ function __plRingArea(ring) {
     area += (ring[j][0] + ring[i][0]) * (ring[j][1] - ring[i][1]);
   return area / 2;
 }
+// Centroide (centro de massa) do anel externo de um polígono.
+function __plPolyCentroid(poly) {
+  const r = poly[0];
+  let area = 0, cx = 0, cy = 0;
+  for (let i = 0, len = r.length, j = len - 1; i < len; j = i++) {
+    const a = r[i], b = r[j];
+    const f = a[0] * b[1] - b[0] * a[1];
+    cx += (a[0] + b[0]) * f;
+    cy += (a[1] + b[1]) * f;
+    area += f * 3;
+  }
+  if (area === 0) return [r[0][0], r[0][1]];
+  return [cx / area, cy / area];
+}
+// Puxa o polo de inacessibilidade em direção ao centroide (centro visual), parando
+// antes que o ponto chegue perto da borda. Para distritos em forma de crescente ou
+// alongados (ex.: a zona norte de Teresina, ilhas de Belém/Porto Alegre) o polo cru
+// fica num lóbulo afastado da massa do distrito; isto recentra o círculo sem nunca
+// sair do polígono (mantém ≥35% da folga máxima até a borda).
+function __biasTowardCentroid(poly, pl) {
+  const ALPHA = 0.35;
+  const dPL = __plPointToPolyDist(pl[0], pl[1], poly);
+  if (!(dPL > 0)) return pl;
+  const c = __plPolyCentroid(poly);
+  const th = ALPHA * dPL;
+  let bx = pl[0], by = pl[1];
+  for (let t = 0.1; t <= 1.0001; t += 0.1) {
+    const x = pl[0] + (c[0] - pl[0]) * t;
+    const y = pl[1] + (c[1] - pl[1]) * t;
+    if (__plPointToPolyDist(x, y, poly) >= th) { bx = x; by = y; }
+    else break;
+  }
+  return [bx, by];
+}
 // Centro visual {lat,lng} de uma Feature (Polygon|MultiPolygon), garantido dentro
 // da maior parte do polígono. Retorna null se a geometria não for utilizável.
 function featureVisualCenter(feature) {
@@ -847,7 +881,8 @@ function featureVisualCenter(feature) {
     const precision = Math.max(1e-7, Math.min(maxX - minX, maxY - minY) / 100);
     const pt = __polylabel(poly, precision);
     if (!pt || !Number.isFinite(pt[0]) || !Number.isFinite(pt[1])) return null;
-    return { lat: pt[1], lng: pt[0] };
+    const ref = __biasTowardCentroid(poly, pt);
+    return { lat: ref[1], lng: ref[0] };
   } catch (e) {
     return null;
   }
@@ -1302,7 +1337,9 @@ function getStandardFederationKey(name, ignoreFederation = false) {
   else if (clean === 'PEN' || clean === 'PATRI' || clean === 'PATRIOTA') partyKey = 'PATRIOTA';
   else if (clean === 'PTC' || clean === 'AGIR') partyKey = 'AGIR';
   else if (clean === 'PMN' || clean === 'MOBILIZA') partyKey = 'MOBILIZA';
-  else if (clean === 'PFL' || clean === 'DEM') partyKey = 'DEM';
+  // O número 25 (antigo PFL/DEM) passou a ser do PRD a partir de 2024; o DEM
+  // já havia se fundido na UNIÃO em 2022, então não há DEM genuíno em 2024+.
+  else if (clean === 'PFL' || clean === 'DEM') partyKey = (currentYear >= 2024) ? 'PRD' : 'DEM';
   else if (clean === 'PCDOB' || clean === 'PC_DO_B') partyKey = 'PCDOB';
 
   if (currentYear >= 2022 && !ignoreFederation) {
@@ -1327,6 +1364,9 @@ function getPartyNameByNumber(candId, year = currentYear) {
   }
   if (id === '20' && year >= 2024) {
     return 'PODE';
+  }
+  if (id === '25' && year >= 2024) {
+    return 'PRD'; // número 25 (ex-PFL/DEM) passou ao PRD em 2024
   }
   return PARTY_NUMBERS[id] || null;
 }
@@ -9309,6 +9349,18 @@ function municipalTopParty(alloc, voteMap = {}) {
 }
 
 // ── Dotplot / Setor circles sobre cada região municipal (replica drawSemilocalCircles) ──
+// Ajustes manuais da posição do círculo de resultado em distritos onde o centro
+// geométrico cai numa área vazia/ilha/rural distante do núcleo urbano do distrito
+// (distritos que envolvem o centro, ou com ilhas: nenhum método baseado em folga
+// até a borda consegue posicionar o rótulo na faixa urbana estreita).
+// Chave: "<Capital>-<dist03>"  →  [lng, lat]
+const MUNICIPAL_CIRCLE_OVERRIDES = {
+  'Teresina-1': [-42.7150, -4.9950],
+  'Porto Alegre-1': [-51.2162, -30.0397],
+  'Belém-2': [-48.4628, -1.5046],
+  'Belém-8': [-48.4150, -1.2150],
+};
+
 function drawMunicipalRegionCircles() {
   clearStateCircles();
   if (!municipalLayer || !nationalSimulationResults) return;
@@ -9335,9 +9387,13 @@ function drawMunicipalRegionCircles() {
     const voteMap = getMunicipalRegionVoteMap(cap, d);
     const { seatColors } = buildOrderedSeatColors(allocations, voteMap);
 
-    // Polo de inacessibilidade: mantém o círculo dentro do próprio distrito
-    // (o centro do bounding box vazava para fora ou sobre o distrito vizinho).
-    let center = featureVisualCenter(feature) || layer.getBounds().getCenter();
+    // Posição do círculo: ajuste manual quando definido; senão, polo de
+    // inacessibilidade (mantém o círculo dentro do próprio distrito; o centro do
+    // bounding box vazava para fora ou sobre o distrito vizinho).
+    let center;
+    const ov = MUNICIPAL_CIRCLE_OVERRIDES[subName];
+    if (ov) center = { lat: ov[1], lng: ov[0] };
+    else center = featureVisualCenter(feature) || layer.getBounds().getCenter();
 
     let myIcon;
     if (circleViewMode === 'dots') {
