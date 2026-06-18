@@ -374,7 +374,7 @@ const INSET_GROUPS = {
   'rmsp': {
     label: 'RM São Paulo',
     districts: ['São Paulo-10', 'São Paulo-1', 'São Paulo-12', 'São Paulo-5',
-                 'São Paulo-8', 'São Paulo-7', 'São Paulo-6', 'São Paulo-20'],
+      'São Paulo-8', 'São Paulo-7', 'São Paulo-6', 'São Paulo-20'],
     contains: ['cidade-sp'],
     tgtLat: -24.4471, tgtLng: -38.4082, scale: 5.1
   },
@@ -387,7 +387,7 @@ const INSET_GROUPS = {
   'rmrj': {
     label: 'RM Rio de Janeiro',
     districts: ['Rio de Janeiro-1', 'Rio de Janeiro-2', 'Rio de Janeiro-3',
-                 'Rio de Janeiro-7', 'Rio de Janeiro-8'],
+      'Rio de Janeiro-7', 'Rio de Janeiro-8'],
     contains: [],
     tgtLat: -30.5623, tgtLng: -30.6738, scale: 7
   },
@@ -704,25 +704,25 @@ function getRegionalNationalBounds() {
   } else if (estadosGeoJSON) {
     bounds = geoBboxBounds(estadosGeoJSON);
   }
-  
+
   if (bounds && bounds.isValid()) {
     let bbox = [bounds.bbox[0][0], bounds.bbox[0][1], bounds.bbox[1][0], bounds.bbox[1][1]];
-    
+
     for (const group of Object.values(INSET_GROUPS)) {
       const { tgtLat, tgtLng } = group;
       const margin = 3.5;
-      
+
       const minL = tgtLng - margin;
       const maxL = tgtLng + margin;
       const minT = tgtLat - margin;
       const maxT = tgtLat + margin;
-      
+
       if (minL < bbox[0]) bbox[0] = minL;
       if (minT < bbox[1]) bbox[1] = minT;
       if (maxL > bbox[2]) bbox[2] = maxL;
       if (maxT > bbox[3]) bbox[3] = maxT;
     }
-    
+
     bounds = __glBounds(bbox);
   }
   return bounds;
@@ -751,7 +751,7 @@ function __plPointToPolyDist(x, y, polygon) {
     for (let i = 0, len = ring.length, j = len - 1; i < len; j = i++) {
       const a = ring[i], b = ring[j];
       if ((a[1] > y) !== (b[1] > y) &&
-          x < (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]) + a[0]) inside = !inside;
+        x < (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]) + a[0]) inside = !inside;
       minDistSq = Math.min(minDistSq, __plSegDistSq(x, y, a, b));
     }
   }
@@ -949,10 +949,14 @@ function glGeoJSON(data, opts) {
   // pseudo-layers (Leaflet sublayer analogs)
   baked.forEach((bf, i) => {
     const origFeature = rawFeats[i];
-    const pathProxy = { style: new Proxy({}, { set(t, k, v) {
-      if (k === 'pointerEvents') { if (v === 'none') handle._skip.add(i); else handle._skip.delete(i); }
-      t[k] = v; return true;
-    } }) };
+    const pathProxy = {
+      style: new Proxy({}, {
+        set(t, k, v) {
+          if (k === 'pointerEvents') { if (v === 'none') handle._skip.add(i); else handle._skip.delete(i); }
+          t[k] = v; return true;
+        }
+      })
+    };
     handle._layers[i] = {
       feature: origFeature,
       _idx: i,
@@ -1197,6 +1201,7 @@ let mistoSimResults = null;         // simulation output (see runMistoSimulation
 let mistoOverhangLayerIds = [];     // extra GL layer ids (stripe fill) added directly via mapObj
 let mistoOverhangSourceIds = [];    // extra GL source ids added directly via mapObj
 let mistoOverhangMarkers = [];      // glMarker handles for the centered "*" on stripped districts
+let mistoInsetLayers = [];          // GL layer/marker handles for the mixed system proportional inset map
 let mistoDataLoading = null;        // Promise guard for lazy load
 
 // UF code -> sigla mapping (numeric IBGE code to 2-letter abbreviation)
@@ -2261,6 +2266,37 @@ function runMistoSimulation() {
         listSeats[p] = ls;
         seats[p] = ds + ls;
       });
+    } else if (mixedMode === 'ams') {
+      const L = Math.max(0, T - D);
+      const listAlloc = {};
+      const activeParties = Object.entries(listVotes)
+        .filter(([, v]) => v > 0)
+        .map(([party, votes]) => ({ party, votes }));
+      
+      activeParties.forEach(p => { listAlloc[p.party] = 0; });
+      
+      if (L > 0 && activeParties.length > 0) {
+        for (let round = 0; round < L; round++) {
+          let maxQ = -1, chosen = null;
+          for (const p of activeParties) {
+            const sList = listAlloc[p.party];
+            const sDist = dwCounts[p.party] || 0;
+            const sTotal = sDist + sList;
+            const q = method === 'saintlague' ? p.votes / (2 * sTotal + 1) : p.votes / (sTotal + 1);
+            if (q > maxQ + 1e-9) { maxQ = q; chosen = p.party; }
+            else if (Math.abs(q - maxQ) <= 1e-9 && chosen && p.votes > (listVotes[chosen] || 0)) { chosen = p.party; }
+          }
+          if (chosen) listAlloc[chosen]++;
+        }
+      }
+      const all = new Set([...Object.keys(dwCounts), ...Object.keys(listAlloc)]);
+      all.forEach(p => {
+        const ls = listAlloc[p] || 0;
+        const ds = dwCounts[p] || 0;
+        distSeats[p] = ds;
+        listSeats[p] = ls;
+        seats[p] = ds + ls;
+      });
     } else {
       const ent = allocateSeats(listVotes, T, method);
       const all = new Set([...Object.keys(dwCounts), ...Object.keys(ent)]);
@@ -2332,6 +2368,8 @@ function ensureMistoStripePattern(color) {
   canvas.width = imgSize; canvas.height = imgSize;
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, imgSize, imgSize);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, imgSize, imgSize);
   ctx.strokeStyle = color;
   ctx.lineWidth = lineWidth * pixelRatio;
 
@@ -2351,7 +2389,7 @@ function ensureMistoStripePattern(color) {
   ctx.stroke();
 
   const img = ctx.getImageData(0, 0, imgSize, imgSize);
-  mapObj.addImage(imgId, 
+  mapObj.addImage(imgId,
     { width: imgSize, height: imgSize, data: new Uint8Array(img.data.buffer) },
     { pixelRatio: pixelRatio }
   );
@@ -2371,8 +2409,9 @@ function clearMistoOverhangOverlays() {
   }
   mistoOverhangLayerIds = [];
   mistoOverhangSourceIds = [];
-  mistoOverhangMarkers.forEach(m => { try { m.remove(); } catch (e) {} });
+  mistoOverhangMarkers.forEach(m => { try { m.remove(); } catch (e) { } });
   mistoOverhangMarkers = [];
+  clearMistoInsetLayers();
 }
 
 // Render the overhang stripe pattern over the given stripped features.
@@ -2380,13 +2419,15 @@ function renderMistoOverhangOverlays(strippedFeatures) {
   clearMistoOverhangOverlays();
   if (!mapObj || !strippedFeatures.length) return;
 
-  // Group features by party color
+  // Group features by gradient color based on winner percentage
   const colorToFeatures = {};
   for (const feat of strippedFeatures) {
     const fid = feat.properties.fid;
     const result = mistoSimResults.districtWinners.find(d => d.fid === fid);
     const winner = result ? result.winner : null;
-    const color = winner ? getPartyColor(winner) : '#777777';
+    const baseColor = winner ? getPartyColor(winner) : '#777777';
+    const winnerPct = result ? result.winnerPct : 0;
+    const color = getUniversalGradientColor(baseColor, winnerPct);
     if (!colorToFeatures[color]) colorToFeatures[color] = [];
     colorToFeatures[color].push(feat);
   }
@@ -2460,8 +2501,8 @@ function renderMistoMap() {
       return {
         fillColor: getUniversalGradientColor(color, winnerPct),
         fillOpacity: isOverhang ? 0.0 : 0.85,
-        color: '#ffffff',
-        weight: filterUF ? 1.0 : 0.5,
+        color: '#111111',
+        weight: filterUF ? 0.5 : 0.25,
         opacity: 0.8
       };
     },
@@ -2513,10 +2554,15 @@ function renderMistoMap() {
     .filter(f => strippedFids.has(f.properties.fid) && passesFilter(f));
   renderMistoOverhangOverlays(strippedFeatures);
 
-  // Per-state dot-plots of the proportional (list) seats in the corner mini-map
+  // Bring the district border lines to the front so they draw on top of the overhang stripes
+  if (distritosMistoLayer && mapObj.getLayer(distritosMistoLayer.id + '-line')) {
+    mapObj.moveLayer(distritosMistoLayer.id + '-line');
+  }
+
+  // Per-state dot-plots of the proportional (list) seats in the MapLibre inset map
   // (kept off the district choropleth). National view only.
   clearStateCircles();
-  renderMistoMiniMap();
+  renderMistoInsetMap();
 }
 
 // Zoom/filter the mixed-member map to a single state.
@@ -2526,124 +2572,188 @@ function selectMistoState(uf) {
   document.getElementById('btnBackToNational').classList.remove('hidden');
   renderMistoMap();
   if (distritosMistoLayer) {
-    try { glFitBounds(distritosMistoLayer.getBounds(), [20, 20]); } catch (e) {}
+    try { glFitBounds(distritosMistoLayer.getBounds(), [20, 20]); } catch (e) { }
   }
   renderMistoResultsList();
 }
 
-// Hide/empty the proportional-seat states mini-map.
-function clearMistoMiniMap() {
-  const el = document.getElementById('mistoMiniMap');
-  if (el) { el.innerHTML = ''; el.classList.add('hidden'); }
+// Clean up mixed inset map layers and sources
+function clearMistoInsetLayers() {
+  mistoInsetLayers.forEach(l => { try { glRemove(l); } catch (e) { } });
+  mistoInsetLayers = [];
 }
 
-// Render a small map of the Brazilian states (bottom-left corner) with dot-plots (or
-// pizza) of the PROPORTIONAL (list) seats per state — same look as the main-map state
-// circles, but kept off the district choropleth. National misto view only.
-function renderMistoMiniMap() {
-  const el = document.getElementById('mistoMiniMap');
-  if (!el) return;
-  if (!mistoSimResults || !estadosGeoJSON || selectedState !== null) {
-    clearMistoMiniMap();
+// Generate HTML tooltip for a state inside the mixed system proportional inset map
+function getMistoStateTooltipHtml(uf) {
+  if (!mistoSimResults) return '';
+  const { stateListSeats = {}, stateSeats = {}, stateNominalTotal = {} } = mistoSimResults;
+
+  const listAllocations = stateListSeats[uf] || {};
+  const totalSeats = Object.values(stateSeats[uf] || {}).reduce((s, v) => s + v, 0);
+  const nominal = stateNominalTotal[uf] || 0;
+
+  const sortedParties = Object.entries(listAllocations)
+    .filter(([_, seats]) => seats > 0)
+    .map(([party, seats]) => ({
+      party,
+      seats,
+      color: getPartyColor(party),
+      cleanName: getCleanGroupName(party)
+    }))
+    .sort((a, b) => b.seats - a.seats);
+
+  let rowsHtml = '';
+  sortedParties.forEach(p => {
+    rowsHtml += `
+      <tr>
+        <td style="padding: 4px 6px; text-align: left; font-size: 11px; border-bottom: 1px solid rgba(125,125,125,0.08);">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <div style="width: 3px; height: 12px; border-radius: 1px; background-color: ${p.color};"></div>
+            <span>${p.cleanName}</span>
+          </div>
+        </td>
+        <td style="padding: 4px 6px; text-align: right; font-weight: bold; font-size: 11px; border-bottom: 1px solid rgba(125,125,125,0.08);">${p.seats}</td>
+      </tr>
+    `;
+  });
+
+  if (!rowsHtml) {
+    rowsHtml = `<tr><td colspan="2" style="text-align: center; color: var(--muted); padding: 8px;">Sem cadeiras de lista</td></tr>`;
+  }
+
+  const listTotal = Object.values(listAllocations).reduce((s, v) => s + v, 0);
+
+  return `
+    <div class="nyt-tooltip-container" style="font-family: var(--font-main); color: var(--text); min-width: 220px; padding: 4px;">
+      <div class="district-nyt-title" style="margin-bottom: 6px; font-weight: 700; font-size: 13px;">${UF_NAMES[uf] || uf} (${uf})</div>
+      <div style="font-size: 11px; color: var(--text-sec); margin-bottom: 6px; border-bottom: 1px solid var(--border-color); padding-bottom: 6px;">
+        Total: <strong>${totalSeats}</strong> cadeiras (Nominal: ${nominal}) · Lista: <strong>${listTotal}</strong>
+      </div>
+      <table style="width: 100%; border-collapse: collapse;">
+        <thead>
+          <tr>
+            <th style="text-align: left; font-size: 9px; color: var(--text-sec); text-transform: uppercase; padding: 2px 6px; border-bottom: 1px solid var(--border-color);">Partido</th>
+            <th style="text-align: right; font-size: 9px; color: var(--text-sec); text-transform: uppercase; padding: 2px 6px; border-bottom: 1px solid var(--border-color);">Cadeiras</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHtml}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+// Render the proportional list seats map of Brazil inside the main MapLibre map as an inset.
+// Uses the exact same coordinates transformation system as the regional circumscription insets.
+function renderMistoInsetMap() {
+  clearMistoInsetLayers();
+  if (!mapObj || !estadosGeoJSON || !mistoSimResults || selectedState !== null) {
     setCircleToggleVisible(selectedState === null && currentSystemType === 'misto');
     return;
   }
-  el.classList.remove('hidden');
-  el.innerHTML = '';
-
-  const rect = el.getBoundingClientRect();
-  const w = Math.max(200, Math.round(rect.width));
-  const h = Math.max(220, Math.round(rect.height));
-  const pad = 10;
 
   const { stateSeats = {}, stateListSeats = {}, partyNationalVotes = {} } = mistoSimResults;
 
-  // Projection fit to the states plus all circle anchor/label points (so offshore
-  // clusters of coastal states remain inside the box).
-  const extraPts = [];
-  for (const cfg of Object.values(STATE_CIRCLE_CONFIGS)) {
-    extraPts.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [cfg.center[1], cfg.center[0]] } });
-    if (cfg.label) extraPts.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [cfg.label[1], cfg.label[0]] } });
-  }
-  const boundsFC = { type: 'FeatureCollection', features: estadosGeoJSON.features.concat(extraPts) };
-  const proj = d3.geoMercator().fitExtent([[pad, pad + 14], [w - pad, h - pad]], boundsFC);
-  const pathGen = d3.geoPath(proj);
+  // Center coordinate of the Brazil inset map in the empty Pacific Ocean area:
+  // tgtLat: -22.0, tgtLng: -79.0, scale: 0.46 (west of Brazil)
+  const tgtLat = -22.0;
+  const tgtLng = -70.0;
+  const scale = 0.46;
+  const transformFn = _buildMercatorTransform(estadosGeoJSON.features, tgtLat, tgtLng, scale);
 
-  const title = document.createElement('div');
-  title.className = 'misto-minimap-title';
-  title.textContent = 'Cadeiras de lista por estado';
-  el.appendChild(title);
+  // Transform states geometries using the Mercator transform
+  const transformedStates = estadosGeoJSON.features.map(f => ({
+    ...f,
+    geometry: _transformGeom(f.geometry, transformFn)
+  }));
 
-  const svgNS = 'http://www.w3.org/2000/svg';
-  const svg = document.createElementNS(svgNS, 'svg');
-  svg.setAttribute('width', w);
-  svg.setAttribute('height', h);
-  svg.setAttribute('class', 'misto-minimap-svg');
-  svg.style.position = 'absolute';
-  svg.style.left = '0';
-  svg.style.top = '0';
+  // Draw transformed states (tinted by winning party and vote %, same as district map)
+  const statesLayer = glGeoJSON({ type: 'FeatureCollection', features: transformedStates }, {
+    style: feature => {
+      const uf = feature.properties.SIGLA_UF;
+      const seats = stateSeats[uf] || {};
+      let top = null, topN = -1;
+      for (const [p, s] of Object.entries(seats)) {
+        if (s > topN) { topN = s; top = p; }
+      }
+      const baseColor = top ? getPartyColor(top) : '#444444';
+      const winnerPct = top ? getStateWinnerVotePct(uf, top) : 0;
+      const fillCol = top ? getUniversalGradientColor(baseColor, winnerPct) : '#444444';
+      return {
+        fillColor: fillCol,
+        fillOpacity: 0.85,
+        color: '#111111',
+        weight: 0.6,
+        opacity: 0.9
+      };
+    }
+  }).addTo(mapObj);
+  mistoInsetLayers.push(statesLayer);
 
-  // State outlines, lightly tinted by the party with most total seats in the state
-  estadosGeoJSON.features.forEach(f => {
-    const uf = f.properties.SIGLA_UF;
-    const seats = stateSeats[uf] || {};
-    let top = null, topN = -1;
-    for (const [p, s] of Object.entries(seats)) if (s > topN) { topN = s; top = p; }
-    const col = top ? getPartyColor(top) : '#444444';
-    const path = document.createElementNS(svgNS, 'path');
-    path.setAttribute('d', pathGen(f) || '');
-    path.setAttribute('fill', col);
-    path.setAttribute('fill-opacity', '0.38');
-    path.setAttribute('stroke', '#0b0d11');
-    path.setAttribute('stroke-width', '0.6');
-    svg.appendChild(path);
-  });
-
-  // Leader lines + anchor dots for states whose cluster is offset (config.label)
+  // Re-calculate the scenario max seats to size dot plots consistently
+  let maxSeatsInScenario = 0;
   for (const [uf, cfg] of Object.entries(STATE_CIRCLE_CONFIGS)) {
     const listN = Object.values(stateListSeats[uf] || {}).reduce((s, v) => s + v, 0);
-    if (listN <= 0 || !cfg.label) continue;
-    const a = proj([cfg.center[1], cfg.center[0]]);
-    const b = proj([cfg.label[1], cfg.label[0]]);
-    if (!a || !b) continue;
-    const line = document.createElementNS(svgNS, 'line');
-    line.setAttribute('x1', a[0]); line.setAttribute('y1', a[1]);
-    line.setAttribute('x2', b[0]); line.setAttribute('y2', b[1]);
-    line.setAttribute('stroke', '#ffffff'); line.setAttribute('stroke-width', '1'); line.setAttribute('opacity', '0.85');
-    svg.appendChild(line);
-    const dot = document.createElementNS(svgNS, 'circle');
-    dot.setAttribute('cx', a[0]); dot.setAttribute('cy', a[1]); dot.setAttribute('r', '2');
-    dot.setAttribute('fill', '#ffffff'); dot.setAttribute('stroke', '#1a1a24'); dot.setAttribute('stroke-width', '1');
-    svg.appendChild(dot);
+    maxSeatsInScenario = Math.max(maxSeatsInScenario, listN);
   }
-  el.appendChild(svg);
+  const scenarioDotRadius = getDotRadiusForSeats(maxSeatsInScenario) * 0.6; // slightly smaller for inset map
 
-  // Dot-plot (or pizza) clusters positioned at each state's circle location
-  const dotR = 2.6;
+  // Render proportional list seat circle markers inside the transformed states
   for (const [uf, cfg] of Object.entries(STATE_CIRCLE_CONFIGS)) {
     const alloc = stateListSeats[uf] || {};
     const listN = Object.values(alloc).reduce((s, v) => s + v, 0);
     if (listN <= 0) continue;
+
     const { seatColors } = buildOrderedSeatColors(alloc, partyNationalVotes);
     const posLL = cfg.label || cfg.center;
-    const pt = proj([posLL[1], posLL[0]]);
-    if (!pt) continue;
+    const pt = transformFn(posLL[1], posLL[0]); // [lng_trans, lat_trans]
 
-    const wrap = document.createElement('div');
-    wrap.className = 'misto-minimap-cluster';
-    wrap.style.left = pt[0] + 'px';
-    wrap.style.top = pt[1] + 'px';
-    if (circleViewMode === 'dots') {
-      wrap.innerHTML = createStateCircleDotsHTML(uf, listN, seatColors, dotR).html;
-    } else {
-      wrap.innerHTML = createStateCircleSVG(uf, listN, seatColors);
-      const s = wrap.firstElementChild;
-      if (s) { s.setAttribute('width', '38'); s.setAttribute('height', '38'); }
+    if (cfg.label) {
+      // Draw leader line inside the transformed inset
+      const centerPt = transformFn(cfg.center[1], cfg.center[0]);
+      const poly = glPolyline([[centerPt[1], centerPt[0]], [pt[1], pt[0]]], {
+        color: '#ffffff',
+        weight: 0.5,
+        opacity: 0.8
+      });
+      mistoInsetLayers.push(poly);
+
+      // Draw anchor dot at state center
+      const anchorDot = glCircleMarker([centerPt[1], centerPt[0]], {
+        radius: 2,
+        fillColor: '#ffffff',
+        color: '#1a1a24',
+        weight: 0.5,
+        fillOpacity: 1
+      });
+      mistoInsetLayers.push(anchorDot);
     }
-    const total = Object.values(stateSeats[uf] || {}).reduce((s, v) => s + v, 0);
-    wrap.title = `${UF_NAMES[uf] || uf}: ${listN} cadeira(s) de lista (total ${total})`;
-    wrap.addEventListener('click', () => selectMistoState(uf));
-    el.appendChild(wrap);
+
+    let myIcon;
+    if (circleViewMode === 'dots') {
+      const dotsResult = createStateCircleDotsHTML(uf, listN, seatColors, scenarioDotRadius);
+      myIcon = {
+        className: 'state-parliament-circle state-parliament-dots',
+        html: dotsResult.html
+      };
+    } else {
+      const svgHtml = createStateCircleSVG(uf, listN, seatColors);
+      myIcon = {
+        className: 'state-parliament-circle',
+        html: svgHtml
+      };
+    }
+
+    const marker = glMarker(pt, myIcon).addTo();
+    const tooltipHtml = getMistoStateTooltipHtml(uf);
+    marker.bindTooltip(tooltipHtml, { className: 'district-nyt-tooltip', sticky: true });
+
+    marker.on('click', () => {
+      selectMistoState(uf);
+    });
+
+    mistoInsetLayers.push(marker);
   }
 
   setCircleToggleVisible(true);
@@ -2652,7 +2762,8 @@ function renderMistoMiniMap() {
 const MISTO_MODE_LABELS = {
   paralelo: 'Paralelo (sem compensação)',
   comp_overhang: 'Compensatório (mantém overhangs)',
-  comp_sem_overhang: 'Compensatório sem overhangs (alemão)'
+  comp_sem_overhang: 'Compensatório sem overhangs (alemão)',
+  ams: 'AMS / Adicional (compensatório com total fixo)'
 };
 
 // Render the results panel (chamber + bancadas table) for the mixed-member system.
@@ -2867,8 +2978,8 @@ function renderDistrictMapNational() {
       return {
         fillColor: fillCol,
         fillOpacity: 0.85,
-        color: '#ffffff',
-        weight: filterUF ? 1.0 : 0.5,
+        color: '#111111',
+        weight: filterUF ? 0.5 : 0.25,
         opacity: 0.8
       };
     },
@@ -3081,8 +3192,8 @@ async function selectDistrictDetail(fid) {
             return {
               fillColor: fillCol,
               fillOpacity: 0.95,
-              color: '#ffffff',
-              weight: 0.6,
+              color: '#111111',
+              weight: 0.3,
               opacity: 0.8
             };
           },
@@ -3603,7 +3714,7 @@ function setSystemType(type) {
   }
   if (type !== 'misto') {
     clearMistoOverhangOverlays();
-    clearMistoMiniMap();
+    clearMistoInsetLayers();
     if (distritosMistoLayer) { glRemove(distritosMistoLayer); distritosMistoLayer = null; }
   }
 
@@ -7462,7 +7573,7 @@ function createStateCircleDotsHTML(label, N, seatColors, dotROverride = null) {
     const cx = (padding + dotR + rowOffset + col * dotSpacing).toFixed(1);
     const cy = (padding + dotR + row * dotSpacing).toFixed(1);
     const fill = seatColors[i] || '#555555';
-    circles += `<circle cx="${cx}" cy="${cy}" r="${dotR}" fill="${fill}" stroke="#0b0d11" stroke-width="0.375"/>`;
+    circles += `<circle cx="${cx}" cy="${cy}" r="${dotR}" fill="${fill}" stroke="#0b0d11" stroke-width="0.1875"/>`;
   }
 
   const w = Math.ceil(svgW);
@@ -7502,7 +7613,7 @@ async function redrawCircles() {
     drawSemilocalCircles();
   } else if (currentSystemType === 'misto' && selectedState === null) {
     // Mixed-member national: redraw the proportional-seat mini-map (dots ↔ pizza)
-    renderMistoMiniMap();
+    renderMistoInsetMap();
   } else if (currentSystemType === 'proporcional' && selectedState === null) {
     // National proportional: clear and redraw state circles
     clearStateCircles();
@@ -9364,7 +9475,7 @@ function renderDeputadosSemilocalLeafletMap() {
   if (!mapObj) return;
 
   const selectedCirc = document.getElementById('selectCircumscription')?.value || 'estadual';
-  const selectedLevel = document.getElementById('selectElectionLevel')?.value  || 'nacional';
+  const selectedLevel = document.getElementById('selectElectionLevel')?.value || 'nacional';
   const isRegionalNacional = selectedCirc === 'regional' && selectedLevel === 'nacional';
 
   // Show Leaflet map, hide tiles (same style as other national views)
@@ -9478,21 +9589,21 @@ async function loadInsetsGeoJSON() {
 }
 
 function clearInsetOutlines() {
-  insetOutlineLayers.forEach(l => { try { glRemove(l); } catch(e){} });
+  insetOutlineLayers.forEach(l => { try { glRemove(l); } catch (e) { } });
   insetOutlineLayers = [];
 }
 
 // Markers only — cheap DOM nodes that are rebuilt every render.
 function clearInsetMarkers() {
-  insetMarkerLayers.forEach(l => { try { glRemove(l); } catch(e){} });
+  insetMarkerLayers.forEach(l => { try { glRemove(l); } catch (e) { } });
   insetMarkerLayers = [];
 }
 
 // Persistent inset GeoJSON layers (filled polygons + dashed child outlines).
 function clearInsetGeoLayers() {
-  Object.values(insetFilledLayers).forEach(l => { try { glRemove(l); } catch(e){} });
+  Object.values(insetFilledLayers).forEach(l => { try { glRemove(l); } catch (e) { } });
   insetFilledLayers = {};
-  insetChildOutlineLayers.forEach(l => { try { glRemove(l); } catch(e){} });
+  insetChildOutlineLayers.forEach(l => { try { glRemove(l); } catch (e) { } });
   insetChildOutlineLayers = [];
 }
 
@@ -9555,8 +9666,8 @@ function _buildMercatorTransform(features, tgtLat, tgtLng, scale) {
     }));
   });
   const srcCxLng = (minLng + maxLng) / 2;
-  const srcCyMY  = (minMY + maxMY)  / 2;
-  const tgtMY    = _mercY(tgtLat);
+  const srcCyMY = (minMY + maxMY) / 2;
+  const tgtMY = _mercY(tgtLat);
   return (lng, lat) => [
     tgtLng + (lng - srcCxLng) * scale,
     _invMercY(tgtMY + (_mercY(lat) - srcCyMY) * scale)
@@ -9792,7 +9903,7 @@ function insetCircleContent(seatColors, size) {
       const row = Math.floor(i / cols), col = i % cols;
       const rowSeats = row === rows - 1 ? (N - row * cols) : cols;
       const ro = rowSeats < cols ? ((cols - rowSeats) * spacing) / 2 : 0;
-      html += `<circle cx="${(ox + ro + col * spacing).toFixed(1)}" cy="${(oy + row * spacing).toFixed(1)}" r="${dotR.toFixed(1)}" fill="${seatColors[i]||'#555'}" stroke="#0b0d11" stroke-width="0.2"/>`;
+      html += `<circle cx="${(ox + ro + col * spacing).toFixed(1)}" cy="${(oy + row * spacing).toFixed(1)}" r="${dotR.toFixed(1)}" fill="${seatColors[i] || '#555'}" stroke="#0b0d11" stroke-width="0.2"/>`;
     }
   } else {
     const innerR = R * 0.28;
@@ -9807,7 +9918,7 @@ function insetCircleContent(seatColors, size) {
         const ix1 = cx + innerR * Math.cos(a1), iy1 = cy + innerR * Math.sin(a1);
         const ix2 = cx + innerR * Math.cos(a2), iy2 = cy + innerR * Math.sin(a2);
         const lg = step > Math.PI ? 1 : 0;
-        html += `<path d="M${ix1.toFixed(2)} ${iy1.toFixed(2)} L${x1.toFixed(2)} ${y1.toFixed(2)} A${R} ${R} 0 ${lg} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} L${ix2.toFixed(2)} ${iy2.toFixed(2)} A${innerR} ${innerR} 0 ${lg} 0 ${ix1.toFixed(2)} ${iy1.toFixed(2)}Z" fill="${seatColors[i]||'#555'}" stroke="#0b0d11" stroke-width="0.25"/>`;
+        html += `<path d="M${ix1.toFixed(2)} ${iy1.toFixed(2)} L${x1.toFixed(2)} ${y1.toFixed(2)} A${R} ${R} 0 ${lg} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} L${ix2.toFixed(2)} ${iy2.toFixed(2)} A${innerR} ${innerR} 0 ${lg} 0 ${ix1.toFixed(2)} ${iy1.toFixed(2)}Z" fill="${seatColors[i] || '#555'}" stroke="#0b0d11" stroke-width="0.25"/>`;
       }
     }
   }
@@ -9844,11 +9955,15 @@ function _legacyRemovedInsetPanel(groupId, hiresGeo, containerEl) {
   });
 
   // D3 projection fitted to bbox
-  const bboxFeature = { type: 'Feature', geometry: { type: 'Polygon', coordinates: [[
-    [minLng - 0.04, minLat - 0.04], [maxLng + 0.04, minLat - 0.04],
-    [maxLng + 0.04, maxLat + 0.04], [minLng - 0.04, maxLat + 0.04],
-    [minLng - 0.04, minLat - 0.04]
-  ]] } };
+  const bboxFeature = {
+    type: 'Feature', geometry: {
+      type: 'Polygon', coordinates: [[
+        [minLng - 0.04, minLat - 0.04], [maxLng + 0.04, minLat - 0.04],
+        [maxLng + 0.04, maxLat + 0.04], [minLng - 0.04, maxLat + 0.04],
+        [minLng - 0.04, minLat - 0.04]
+      ]]
+    }
+  };
   const proj = d3.geoMercator().fitExtent([[PAD, PAD], [svgW - PAD, svgH - PAD]], bboxFeature);
   const pathGen = d3.geoPath().projection(proj);
 
@@ -9951,7 +10066,7 @@ function _createOrUpdateInsetPanel(groupId, parentEl) {
 
     parentEl.appendChild(panel);
   }
-  panel.style.width  = group.size.w + 'px';
+  panel.style.width = group.size.w + 'px';
   panel.style.height = group.size.h + 'px';
   const pos = group.pos || {};
   ['top', 'bottom', 'left', 'right'].forEach(p => { panel.style[p] = pos[p] ?? ''; });
@@ -9979,7 +10094,7 @@ function drawSemilocalCircles(forceRebuild) {
   const { subregionSeats, subregionAllocations } = nationalSimulationResults;
 
   const selectedCirc = document.getElementById('selectCircumscription')?.value || 'estadual';
-  const selectedLevel = document.getElementById('selectElectionLevel')?.value  || 'nacional';
+  const selectedLevel = document.getElementById('selectElectionLevel')?.value || 'nacional';
   const isRegionalNacional = selectedCirc === 'regional' && selectedLevel === 'nacional';
 
   const scenarioDotRadius = getDotRadiusForSeats(
@@ -10001,7 +10116,7 @@ function drawSemilocalCircles(forceRebuild) {
   // just retint their opacity in place rather than rebuilding every marker.
   const sig = circleViewMode + '|' + isRegionalNacional;
   if (!forceRebuild && semilocalCircleSig === sig
-      && semilocalCircleResults === nationalSimulationResults && stateCircleLayers.length > 0) {
+    && semilocalCircleResults === nationalSimulationResults && stateCircleLayers.length > 0) {
     stateCircleLayers.forEach(m => {
       if (m.__isCP) { m.setOpacity(1.0); return; } // compensatory circle stays full
       const sub = m.__subName;
@@ -10758,7 +10873,7 @@ async function selectState(uf) {
 function fitNationalBounds() {
   if (mapObj && estadosGeoJSON) {
     const selectedCirc = document.getElementById('selectCircumscription')?.value || 'estadual';
-    const selectedLevel = document.getElementById('selectElectionLevel')?.value  || 'nacional';
+    const selectedLevel = document.getElementById('selectElectionLevel')?.value || 'nacional';
     const isRegionalNacional = selectedCirc === 'regional' && selectedLevel === 'nacional';
 
     if (isRegionalNacional) {
