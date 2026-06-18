@@ -1137,6 +1137,65 @@ body.mode-distrital .results-body .section-title-row {
   display: none !important;
 }
 
+/* Mixed-member (MMP) system mode: the exclusive selector is hidden unless active */
+.misto-only {
+  display: none;
+}
+body.mode-misto .misto-only {
+  display: block;
+}
+/* No modo misto, ocultar tipo de circunscrição e coligações presidenciais.
+   As cláusulas de barreira (federal e estadual) SÃO usadas no misto e ficam visíveis. */
+body.mode-misto #circumscriptionSection,
+body.mode-misto #presCoalitionSection {
+  display: none !important;
+}
+/* Lista de resultados no modo misto reaproveita o cabeçalho editorial do modo distrital */
+body.mode-misto .results-body .section-title-row {
+  display: none !important;
+}
+
+/* Mini-mapa dos estados (dot-plots das cadeiras proporcionais) no modo misto */
+.misto-minimap {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  width: 33%;
+  height: 46%;
+  min-width: 220px;
+  min-height: 240px;
+  background: rgba(13, 14, 18, 0.55);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  z-index: 1200;
+  overflow: hidden;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+}
+.misto-minimap.hidden {
+  display: none;
+}
+.misto-minimap-title {
+  position: absolute;
+  top: 6px;
+  left: 8px;
+  z-index: 3;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-sec);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  pointer-events: none;
+}
+.misto-minimap-svg {
+  pointer-events: none;
+}
+.misto-minimap-cluster {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  line-height: 0;
+  cursor: pointer;
+}
+
 /* District result card styling */
 .district-result-card {
   background: rgba(255, 255, 255, 0.05);

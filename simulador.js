@@ -1186,8 +1186,18 @@ let distritosLayer = null;   // Leaflet GeoJSON layer for districts
 let distritosMuniLayer = null; // Leaflet GeoJSON layer for municipalities within a selected district
 const cachedMuniGeoJSON = {};  // Cache for state municipality geojson data
 let districtSimResults = null; // { nationalSeats, stateSeats, districtWinners[], partyNationalVotes, nationalValidVotes }
-let currentSystemType = 'proporcional'; // 'proporcional' or 'distrital'
+let currentSystemType = 'proporcional'; // 'proporcional' | 'distrital' | 'misto'
 let selectedDistrict = null; // fid of selected district or null
+
+// Mixed-member (MMP / "Distrital Misto") system variables
+let distritosMistoGeoJSON = null;   // merged FeatureCollection of "Tamanho Americano" districts
+let distritosMistoVotosData = null; // distritos_misto_votos.json (deputy+president votes per district fid)
+let distritosMistoLayer = null;     // GL layer for the district choropleth
+let mistoSimResults = null;         // simulation output (see runMistoSimulation)
+let mistoOverhangLayerIds = [];     // extra GL layer ids (stripe fill) added directly via mapObj
+let mistoOverhangSourceIds = [];    // extra GL source ids added directly via mapObj
+let mistoOverhangMarkers = [];      // glMarker handles for the centered "*" on stripped districts
+let mistoDataLoading = null;        // Promise guard for lazy load
 
 // UF code -> sigla mapping (numeric IBGE code to 2-letter abbreviation)
 const UF_CODE_TO_SIGLA = {
@@ -1969,7 +1979,8 @@ function runDistrictSimulation() {
           if (party === 'VOTOS_BRANCOS' || party === 'VOTOS_NULOS' || party === 'TOTAL_VOTOS_VALIDOS') continue;
           const v = parseInt(votes) || 0;
           if (v <= 0) continue;
-          distVotes[party] = (distVotes[party] || 0) + v;
+          const stdParty = getStandardFederationKey(party);
+          distVotes[stdParty] = (distVotes[stdParty] || 0) + v;
           distTotal += v;
         }
       }
@@ -2054,6 +2065,742 @@ function runDistrictSimulation() {
     nationalValidVotes,
     totalSeats
   };
+}
+
+// ===================== MIXED-MEMBER (MMP / "Distrital Misto") =====================
+
+// Allocate `totalSeats` among parties proportionally to votesByParty, using the
+// given method ('dhondt' | 'saintlague' | 'hare'). Returns { party: seats }.
+// Mirrors the per-state allocation in runSimulation (D'Hondt / Saint-Laguë / Hare).
+function allocateSeats(votesByParty, totalSeats, method) {
+  const result = {};
+  const parties = Object.entries(votesByParty)
+    .filter(([, v]) => v > 0)
+    .map(([party, votes]) => ({ party, votes }));
+  parties.forEach(p => { result[p.party] = 0; });
+  if (totalSeats <= 0 || parties.length === 0) return result;
+
+  if (method === 'hare') {
+    const totalVotes = parties.reduce((s, p) => s + p.votes, 0);
+    const q = totalVotes / totalSeats;
+    let allocated = 0;
+    const remainders = [];
+    parties.forEach(p => {
+      const initial = Math.floor(p.votes / q);
+      result[p.party] = initial;
+      allocated += initial;
+      remainders.push({ party: p.party, rem: p.votes % q, votes: p.votes });
+    });
+    remainders.sort((a, b) => (Math.abs(b.rem - a.rem) > 1e-9 ? b.rem - a.rem : b.votes - a.votes));
+    let i = 0;
+    while (allocated < totalSeats && remainders[i]) { result[remainders[i].party]++; allocated++; i++; }
+  } else {
+    for (let round = 0; round < totalSeats; round++) {
+      let maxQ = -1, chosen = null;
+      for (const p of parties) {
+        const s = result[p.party];
+        const q = method === 'dhondt' ? p.votes / (s + 1) : p.votes / (2 * s + 1);
+        if (q > maxQ + 1e-9) { maxQ = q; chosen = p.party; }
+        else if (Math.abs(q - maxQ) <= 1e-9 && chosen && p.votes > (votesByParty[chosen] || 0)) { chosen = p.party; }
+      }
+      if (chosen) result[chosen]++;
+    }
+  }
+  return result;
+}
+
+// Run the mixed-member simulation: FPTP district winners + proportional list seats,
+// compensated per state. Three variants via #selectMixedMode:
+//   - 'paralelo'          : list seats (T - D) allocated independently of district wins.
+//   - 'comp_overhang'     : seats[p] = max(entitlement, districtWins); overhangs grow the state.
+//   - 'comp_sem_overhang' : seats[p] = entitlement (capped); parties exceeding it lose their
+//                           narrowest-margin districts (flagged overhangStripped).
+function runMistoSimulation() {
+  updateCurrentConfig();
+  if (!distritosMistoGeoJSON || !distritosMistoVotosData || !officialTotals) {
+    mistoSimResults = null;
+    return;
+  }
+
+  const { year, base } = getDistrictElectionSuffix(); // base: 'deputado' | 'presidente'
+  const electionKey = `${base}_${year}`;
+  const method = currentConfig.calcMethod;
+  const mixedMode = document.getElementById('selectMixedMode')?.value || 'paralelo';
+  let seatDistribution = currentConfig.seatDistribution;
+  if (seatDistribution !== 'fair' && seatDistribution !== 'cubicroot') seatDistribution = 'fair';
+  const stateTotals = getSeatsAllocationByState(seatDistribution); // T per UF
+
+  // 1. District FPTP winners, grouped per state
+  const districtWinners = [];
+  const stateDistrictWins = {};   // uf -> party -> count
+  const stateDistrictList = {};   // uf -> [winner objs]
+  const stateDistrictCount = {};  // uf -> D
+
+  for (const feat of distritosMistoGeoJSON.features) {
+    const props = feat.properties;
+    const uf = UF_CODE_TO_SIGLA[props.CD_UF] || props.CD_UF;
+    const fid = props.fid;
+    const distData = distritosMistoVotosData[String(fid)];
+    const raw = (distData && distData[electionKey]) ? distData[electionKey] : {};
+
+    const distVotes = {};
+    let distTotal = 0;
+    for (const [party, v] of Object.entries(raw)) {
+      if (party === 'VOTOS_BRANCOS' || party === 'VOTOS_NULOS' || party === 'TOTAL_VOTOS_VALIDOS') continue;
+      const n = parseInt(v) || 0;
+      if (n <= 0) continue;
+      const stdParty = getStandardFederationKey(party);
+      distVotes[stdParty] = (distVotes[stdParty] || 0) + n;
+      distTotal += n;
+    }
+
+    let winner = null, winnerVotes = 0, secondVotes = 0;
+    for (const [party, v] of Object.entries(distVotes)) {
+      if (v > winnerVotes) { secondVotes = winnerVotes; winnerVotes = v; winner = party; }
+      else if (v > secondVotes) { secondVotes = v; }
+    }
+    const margin = distTotal > 0 ? ((winnerVotes - secondVotes) / distTotal) * 100 : 0;
+    const winnerPct = distTotal > 0 ? (winnerVotes / distTotal) * 100 : 0;
+
+    const dw = {
+      fid, uf, district: props.DISTRICT, nmMun: props.NM_MUN || '',
+      winner, winnerVotes, totalVotes: distTotal, margin, winnerPct,
+      allVotes: distVotes, overhangStripped: false
+    };
+    districtWinners.push(dw);
+    stateDistrictCount[uf] = (stateDistrictCount[uf] || 0) + 1;
+    (stateDistrictList[uf] = stateDistrictList[uf] || []).push(dw);
+    if (winner) {
+      (stateDistrictWins[uf] = stateDistrictWins[uf] || {})[winner] =
+        (stateDistrictWins[uf]?.[winner] || 0) + 1;
+    }
+  }
+
+  // 2. List (PR) votes per state from officialTotals (matches the selected vote base)
+  const partyStateVotes = {};
+  const partyNationalVotes = {};
+  let nationalValidVotes = 0;
+  for (const [uf, ufData] of Object.entries(officialTotals)) {
+    const ufFederal = ufData.f;
+    if (!ufFederal) continue;
+    partyStateVotes[uf] = {};
+    ufFederal.coalitions.forEach(c => {
+      const stdKey = getStandardFederationKey(c.id);
+      partyStateVotes[uf][stdKey] = (partyStateVotes[uf][stdKey] || 0) + c.votes;
+      partyNationalVotes[stdKey] = (partyNationalVotes[stdKey] || 0) + c.votes;
+      nationalValidVotes += c.votes;
+    });
+  }
+
+  // 2b. Barrier clauses (applied to the proportional/list seats only — FPTP district
+  // winners always keep their direct mandate). A party may bypass the barriers via the
+  // alternative "district performance" clause (German Grundmandatsklausel): winning at
+  // least `minDistricts` districts nationally counts as if it had cleared the threshold.
+  const partyNationalPct = {};
+  for (const [p, v] of Object.entries(partyNationalVotes)) {
+    partyNationalPct[p] = nationalValidVotes > 0 ? (v / nationalValidVotes) * 100 : 0;
+  }
+  const natDistrictWins = {};
+  for (const uf of Object.keys(stateDistrictWins)) {
+    for (const [p, c] of Object.entries(stateDistrictWins[uf])) {
+      natDistrictWins[p] = (natDistrictWins[p] || 0) + c;
+    }
+  }
+  const fedBarrierOn = !!currentConfig.toggleFederalBarrier;
+  const fedThreshold = currentConfig.valFederalBarrier || 0;
+  const stBarrierOn = !!currentConfig.toggleStateBarrier;
+  const stThreshold = currentConfig.valStateBarrier || 0;
+  const minDistOn = !!(document.getElementById('toggleMinDistricts') && document.getElementById('toggleMinDistricts').checked);
+  const minDistN = parseInt(document.getElementById('sliderMinDistricts')?.value || '0') || 0;
+  // National-level exemption (federal barrier + district clause)
+  const federalEligible = p => {
+    if (minDistOn && (natDistrictWins[p] || 0) >= minDistN) return true; // alternative clause
+    if (!fedBarrierOn) return true;
+    return (partyNationalPct[p] || 0) >= fedThreshold;
+  };
+
+  // 3. Per-state seat allocation
+  const stateSeats = {};          // uf -> party -> total seats
+  const stateDistrictSeats = {};  // uf -> party -> district seats (kept)
+  const stateListSeats = {};      // uf -> party -> list seats
+  const nationalSeats = {};
+  const nationalDistrictSeats = {};
+  const nationalListSeats = {};
+  const stateNominalTotal = {};   // uf -> T
+  let totalSeats = 0;
+
+  for (const uf of Object.keys(stateDistrictCount)) {
+    const T = stateTotals[uf] || 0;
+    const D = stateDistrictCount[uf];
+    const dwCounts = stateDistrictWins[uf] || {};
+    const allStateVotes = partyStateVotes[uf] || {};
+    stateNominalTotal[uf] = T;
+
+    // Eligible list votes for this state: party must clear the federal barrier AND the
+    // state barrier — unless exempt via the alternative district-performance clause.
+    const stateValidVotes = Object.values(allStateVotes).reduce((s, v) => s + v, 0);
+    const listVotes = {};
+    for (const [p, v] of Object.entries(allStateVotes)) {
+      const exempt = minDistOn && (natDistrictWins[p] || 0) >= minDistN;
+      const stateOk = exempt || !stBarrierOn || (stateValidVotes > 0 && (v / stateValidVotes) * 100 >= stThreshold);
+      if (federalEligible(p) && stateOk) listVotes[p] = v;
+    }
+
+    const seats = {};
+    const distSeats = {};
+    const listSeats = {};
+
+    if (mixedMode === 'paralelo') {
+      const L = Math.max(0, T - D);
+      const listAlloc = allocateSeats(listVotes, L, method);
+      const all = new Set([...Object.keys(dwCounts), ...Object.keys(listAlloc)]);
+      all.forEach(p => {
+        const ls = listAlloc[p] || 0;
+        const ds = dwCounts[p] || 0;
+        distSeats[p] = ds;
+        listSeats[p] = ls;
+        seats[p] = ds + ls;
+      });
+    } else {
+      const ent = allocateSeats(listVotes, T, method);
+      const all = new Set([...Object.keys(dwCounts), ...Object.keys(ent)]);
+      if (mixedMode === 'comp_overhang') {
+        all.forEach(p => {
+          const e = ent[p] || 0;
+          const ds = dwCounts[p] || 0;
+          distSeats[p] = ds;
+          listSeats[p] = Math.max(0, e - ds);
+          seats[p] = Math.max(e, ds);
+        });
+      } else { // comp_sem_overhang (German): cap at entitlement, strip narrowest districts
+        all.forEach(p => {
+          const e = ent[p] || 0;
+          const ds = dwCounts[p] || 0;
+          distSeats[p] = Math.min(ds, e);
+          listSeats[p] = Math.max(0, e - ds);
+          seats[p] = e;
+        });
+        for (const p of all) {
+          const excess = (dwCounts[p] || 0) - (ent[p] || 0);
+          if (excess > 0) {
+            const won = (stateDistrictList[uf] || [])
+              .filter(d => d.winner === p)
+              .sort((a, b) => a.margin - b.margin); // narrowest first
+            for (let i = 0; i < excess && i < won.length; i++) won[i].overhangStripped = true;
+          }
+        }
+      }
+    }
+
+    stateSeats[uf] = seats;
+    stateDistrictSeats[uf] = distSeats;
+    stateListSeats[uf] = listSeats;
+    for (const [p, s] of Object.entries(seats)) {
+      if (s > 0) { nationalSeats[p] = (nationalSeats[p] || 0) + s; totalSeats += s; }
+    }
+    for (const [p, s] of Object.entries(distSeats)) if (s > 0) nationalDistrictSeats[p] = (nationalDistrictSeats[p] || 0) + s;
+    for (const [p, s] of Object.entries(listSeats)) if (s > 0) nationalListSeats[p] = (nationalListSeats[p] || 0) + s;
+  }
+
+  const nominalTotal = Object.values(stateNominalTotal).reduce((s, v) => s + v, 0);
+
+  mistoSimResults = {
+    mixedMode,
+    nationalSeats, nationalDistrictSeats, nationalListSeats,
+    stateSeats, stateDistrictSeats, stateListSeats, stateNominalTotal,
+    districtWinners, stateDistrictWins,
+    partyNationalVotes, partyNationalPct, nationalValidVotes,
+    totalSeats, nominalTotal,
+    totalDistricts: districtWinners.length
+  };
+}
+
+// Build (once per color) and register a diagonal-hatch image in the party color,
+// used to mark overhang-stripped districts in the German (comp_sem_overhang) mode.
+function ensureMistoStripePattern(color) {
+  if (!mapObj || !__glMapReady()) return null;
+  const cleanColor = color.replace('#', '');
+  const imgId = `misto-stripes-${cleanColor}`;
+  if (mapObj.hasImage(imgId)) return imgId;
+
+  const size = 10;
+  const lineWidth = 4.5;
+
+  const pixelRatio = window.devicePixelRatio || 1;
+  const imgSize = size * pixelRatio;
+  const canvas = document.createElement('canvas');
+  canvas.width = imgSize; canvas.height = imgSize;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, imgSize, imgSize);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = lineWidth * pixelRatio;
+
+  ctx.beginPath();
+  // Stroke 1: y = -x
+  ctx.moveTo(-imgSize / 2, imgSize / 2);
+  ctx.lineTo(imgSize / 2, -imgSize / 2);
+
+  // Stroke 2: y = -x + imgSize
+  ctx.moveTo(0, imgSize);
+  ctx.lineTo(imgSize, 0);
+
+  // Stroke 3: y = -x + 2*imgSize
+  ctx.moveTo(imgSize / 2, 3 * imgSize / 2);
+  ctx.lineTo(3 * imgSize / 2, imgSize / 2);
+
+  ctx.stroke();
+
+  const img = ctx.getImageData(0, 0, imgSize, imgSize);
+  mapObj.addImage(imgId, 
+    { width: imgSize, height: imgSize, data: new Uint8Array(img.data.buffer) },
+    { pixelRatio: pixelRatio }
+  );
+  return imgId;
+}
+
+// Remove the overhang stripe overlay layer/source and the centered "*" markers.
+function clearMistoOverhangOverlays() {
+  if (mapObj) {
+    for (const lid of mistoOverhangLayerIds) {
+      if (mapObj.getLayer(lid)) mapObj.removeLayer(lid);
+    }
+    for (const sid of mistoOverhangSourceIds) {
+      if (mapObj.getSource(sid)) mapObj.removeSource(sid);
+    }
+    if (mapObj.getSource('_mistoOverhang')) mapObj.removeSource('_mistoOverhang');
+  }
+  mistoOverhangLayerIds = [];
+  mistoOverhangSourceIds = [];
+  mistoOverhangMarkers.forEach(m => { try { m.remove(); } catch (e) {} });
+  mistoOverhangMarkers = [];
+}
+
+// Render the overhang stripe pattern over the given stripped features.
+function renderMistoOverhangOverlays(strippedFeatures) {
+  clearMistoOverhangOverlays();
+  if (!mapObj || !strippedFeatures.length) return;
+
+  // Group features by party color
+  const colorToFeatures = {};
+  for (const feat of strippedFeatures) {
+    const fid = feat.properties.fid;
+    const result = mistoSimResults.districtWinners.find(d => d.fid === fid);
+    const winner = result ? result.winner : null;
+    const color = winner ? getPartyColor(winner) : '#777777';
+    if (!colorToFeatures[color]) colorToFeatures[color] = [];
+    colorToFeatures[color].push(feat);
+  }
+
+  mistoOverhangLayerIds = [];
+  mistoOverhangSourceIds = [];
+
+  let idx = 0;
+  for (const [color, feats] of Object.entries(colorToFeatures)) {
+    const imgId = ensureMistoStripePattern(color);
+    if (!imgId) continue;
+
+    const sourceId = `_mistoOverhang-src-${idx}`;
+    const layerId = `_mistoOverhang-fill-${idx}`;
+    idx++;
+
+    const fc = { type: 'FeatureCollection', features: feats };
+    mapObj.addSource(sourceId, { type: 'geojson', data: fc });
+    mapObj.addLayer({
+      id: layerId,
+      type: 'fill',
+      source: sourceId,
+      paint: { 'fill-pattern': imgId, 'fill-opacity': 0.9 }
+    });
+    mistoOverhangLayerIds.push(layerId);
+    mistoOverhangSourceIds.push(sourceId);
+  }
+}
+
+// Render the mixed-member district map (national, or filtered to a selected state).
+function renderMistoMap() {
+  if (!distritosMistoGeoJSON || !mistoSimResults) return;
+
+  if (mapObj) {
+    clearInsetOutlines();
+    clearInsetMapLayers();
+    if (semilocalLayer) { glRemove(semilocalLayer); semilocalLayer = null; }
+  }
+
+  if (tileLayer) tileLayer.setOpacity(1);
+  const zoomCtrl = document.querySelector('.maplibregl-ctrl-bottom-right');
+  if (zoomCtrl) zoomCtrl.style.display = 'block';
+
+  if (muniLayer) { glRemove(muniLayer); muniLayer = null; }
+  if (distritosLayer) { glRemove(distritosLayer); distritosLayer = null; }
+  if (distritosMuniLayer) { glRemove(distritosMuniLayer); distritosMuniLayer = null; }
+  if (estadosLayer) { glRemove(estadosLayer); }
+  clearStateCircles();
+  clearMistoOverhangOverlays();
+
+  const fidToResult = {};
+  for (const dw of mistoSimResults.districtWinners) fidToResult[dw.fid] = dw;
+
+  if (distritosMistoLayer) { glRemove(distritosMistoLayer); distritosMistoLayer = null; }
+
+  const filterUF = selectedState;
+  const passesFilter = feature => {
+    if (!filterUF) return true;
+    const featUf = UF_CODE_TO_SIGLA[feature.properties.CD_UF] || feature.properties.CD_UF;
+    return featUf === filterUF;
+  };
+
+  distritosMistoLayer = glGeoJSON(distritosMistoGeoJSON, {
+    filter: passesFilter,
+    style: feature => {
+      const result = fidToResult[feature.properties.fid];
+      const winner = result ? result.winner : null;
+      const color = winner ? getPartyColor(winner) : '#777777';
+      const winnerPct = result ? result.winnerPct : 0;
+      const isOverhang = result ? result.overhangStripped : false;
+      return {
+        fillColor: getUniversalGradientColor(color, winnerPct),
+        fillOpacity: isOverhang ? 0.0 : 0.85,
+        color: '#ffffff',
+        weight: filterUF ? 1.0 : 0.5,
+        opacity: 0.8
+      };
+    },
+    onEachFeature: (feature, layer) => {
+      const fid = feature.properties.fid;
+      const result = fidToResult[fid];
+      const uf = UF_CODE_TO_SIGLA[feature.properties.CD_UF] || feature.properties.CD_UF;
+      const districtNum = feature.properties.DISTRICT;
+
+      let tt = '';
+      if (result && result.allVotes && Object.keys(result.allVotes).length) {
+        const total = result.totalVotes;
+        const parties = Object.entries(result.allVotes)
+          .map(([p, v]) => ({ party: p, votes: v }))
+          .sort((a, b) => b.votes - a.votes)
+          .slice(0, 5);
+        let rowsHtml = '';
+        parties.forEach((p, idx) => {
+          const isWinner = idx === 0 && p.party === result.winner;
+          const cleanParty = getCleanGroupName(p.party);
+          const color = getPartyColor(p.party);
+          const pctStr = total > 0 ? ((p.votes / total) * 100).toFixed(2) : '0.00';
+          if (isWinner) {
+            rowsHtml += `<tr><td style="padding:0;"><div class="district-nyt-winner-cell" style="background-color:${color};"><span>${cleanParty}</span><span style="font-size:10px;margin-left:6px;">✔</span></div></td><td style="color:var(--text);">${fmtInt(p.votes)}</td><td style="font-weight:bold;color:var(--text);">${pctStr}%</td></tr>`;
+          } else {
+            rowsHtml += `<tr><td style="padding:0;"><div class="district-nyt-loser-cell" style="border-left-color:${color};"><span style="margin-left:6px;color:var(--text);">${cleanParty}</span></div></td><td style="color:var(--text-sec);">${fmtInt(p.votes)}</td><td style="font-weight:bold;color:var(--text);">${pctStr}%</td></tr>`;
+          }
+        });
+        const strippedNote = result.overhangStripped
+          ? `<div style="font-size:11px;color:var(--warn);margin-top:4px;">⚠ Mandato distrital perdido (overhang) — coberto pela lista.</div>`
+          : '';
+        tt = `<div class="district-nyt-title">Distrito ${districtNum} (${uf})</div>`
+          + `<table class="district-nyt-table"><thead><tr><th>Partido</th><th>Votos</th><th>Pct.</th></tr></thead><tbody>${rowsHtml}</tbody></table>${strippedNote}`;
+      } else {
+        tt = `<div class="district-nyt-title">Distrito ${districtNum} (${uf})</div><div style="font-size:13px;color:var(--muted);">Sem dados</div>`;
+      }
+      layer.bindTooltip(tt, { className: 'district-nyt-tooltip', sticky: true });
+
+      layer.on('click', () => {
+        if (!filterUF) selectMistoState(uf);
+      });
+    }
+  }).addTo(mapObj);
+
+  // Overhang stripe + "*" overlay (only the German no-overhang mode strips districts)
+  const stripped = mistoSimResults.districtWinners.filter(d => d.overhangStripped);
+  const strippedFids = new Set(stripped.map(d => d.fid));
+  const strippedFeatures = distritosMistoGeoJSON.features
+    .filter(f => strippedFids.has(f.properties.fid) && passesFilter(f));
+  renderMistoOverhangOverlays(strippedFeatures);
+
+  // Per-state dot-plots of the proportional (list) seats in the corner mini-map
+  // (kept off the district choropleth). National view only.
+  clearStateCircles();
+  renderMistoMiniMap();
+}
+
+// Zoom/filter the mixed-member map to a single state.
+function selectMistoState(uf) {
+  selectedState = uf;
+  selectedDistrict = null;
+  document.getElementById('btnBackToNational').classList.remove('hidden');
+  renderMistoMap();
+  if (distritosMistoLayer) {
+    try { glFitBounds(distritosMistoLayer.getBounds(), [20, 20]); } catch (e) {}
+  }
+  renderMistoResultsList();
+}
+
+// Hide/empty the proportional-seat states mini-map.
+function clearMistoMiniMap() {
+  const el = document.getElementById('mistoMiniMap');
+  if (el) { el.innerHTML = ''; el.classList.add('hidden'); }
+}
+
+// Render a small map of the Brazilian states (bottom-left corner) with dot-plots (or
+// pizza) of the PROPORTIONAL (list) seats per state — same look as the main-map state
+// circles, but kept off the district choropleth. National misto view only.
+function renderMistoMiniMap() {
+  const el = document.getElementById('mistoMiniMap');
+  if (!el) return;
+  if (!mistoSimResults || !estadosGeoJSON || selectedState !== null) {
+    clearMistoMiniMap();
+    setCircleToggleVisible(selectedState === null && currentSystemType === 'misto');
+    return;
+  }
+  el.classList.remove('hidden');
+  el.innerHTML = '';
+
+  const rect = el.getBoundingClientRect();
+  const w = Math.max(200, Math.round(rect.width));
+  const h = Math.max(220, Math.round(rect.height));
+  const pad = 10;
+
+  const { stateSeats = {}, stateListSeats = {}, partyNationalVotes = {} } = mistoSimResults;
+
+  // Projection fit to the states plus all circle anchor/label points (so offshore
+  // clusters of coastal states remain inside the box).
+  const extraPts = [];
+  for (const cfg of Object.values(STATE_CIRCLE_CONFIGS)) {
+    extraPts.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [cfg.center[1], cfg.center[0]] } });
+    if (cfg.label) extraPts.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [cfg.label[1], cfg.label[0]] } });
+  }
+  const boundsFC = { type: 'FeatureCollection', features: estadosGeoJSON.features.concat(extraPts) };
+  const proj = d3.geoMercator().fitExtent([[pad, pad + 14], [w - pad, h - pad]], boundsFC);
+  const pathGen = d3.geoPath(proj);
+
+  const title = document.createElement('div');
+  title.className = 'misto-minimap-title';
+  title.textContent = 'Cadeiras de lista por estado';
+  el.appendChild(title);
+
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(svgNS, 'svg');
+  svg.setAttribute('width', w);
+  svg.setAttribute('height', h);
+  svg.setAttribute('class', 'misto-minimap-svg');
+  svg.style.position = 'absolute';
+  svg.style.left = '0';
+  svg.style.top = '0';
+
+  // State outlines, lightly tinted by the party with most total seats in the state
+  estadosGeoJSON.features.forEach(f => {
+    const uf = f.properties.SIGLA_UF;
+    const seats = stateSeats[uf] || {};
+    let top = null, topN = -1;
+    for (const [p, s] of Object.entries(seats)) if (s > topN) { topN = s; top = p; }
+    const col = top ? getPartyColor(top) : '#444444';
+    const path = document.createElementNS(svgNS, 'path');
+    path.setAttribute('d', pathGen(f) || '');
+    path.setAttribute('fill', col);
+    path.setAttribute('fill-opacity', '0.38');
+    path.setAttribute('stroke', '#0b0d11');
+    path.setAttribute('stroke-width', '0.6');
+    svg.appendChild(path);
+  });
+
+  // Leader lines + anchor dots for states whose cluster is offset (config.label)
+  for (const [uf, cfg] of Object.entries(STATE_CIRCLE_CONFIGS)) {
+    const listN = Object.values(stateListSeats[uf] || {}).reduce((s, v) => s + v, 0);
+    if (listN <= 0 || !cfg.label) continue;
+    const a = proj([cfg.center[1], cfg.center[0]]);
+    const b = proj([cfg.label[1], cfg.label[0]]);
+    if (!a || !b) continue;
+    const line = document.createElementNS(svgNS, 'line');
+    line.setAttribute('x1', a[0]); line.setAttribute('y1', a[1]);
+    line.setAttribute('x2', b[0]); line.setAttribute('y2', b[1]);
+    line.setAttribute('stroke', '#ffffff'); line.setAttribute('stroke-width', '1'); line.setAttribute('opacity', '0.85');
+    svg.appendChild(line);
+    const dot = document.createElementNS(svgNS, 'circle');
+    dot.setAttribute('cx', a[0]); dot.setAttribute('cy', a[1]); dot.setAttribute('r', '2');
+    dot.setAttribute('fill', '#ffffff'); dot.setAttribute('stroke', '#1a1a24'); dot.setAttribute('stroke-width', '1');
+    svg.appendChild(dot);
+  }
+  el.appendChild(svg);
+
+  // Dot-plot (or pizza) clusters positioned at each state's circle location
+  const dotR = 2.6;
+  for (const [uf, cfg] of Object.entries(STATE_CIRCLE_CONFIGS)) {
+    const alloc = stateListSeats[uf] || {};
+    const listN = Object.values(alloc).reduce((s, v) => s + v, 0);
+    if (listN <= 0) continue;
+    const { seatColors } = buildOrderedSeatColors(alloc, partyNationalVotes);
+    const posLL = cfg.label || cfg.center;
+    const pt = proj([posLL[1], posLL[0]]);
+    if (!pt) continue;
+
+    const wrap = document.createElement('div');
+    wrap.className = 'misto-minimap-cluster';
+    wrap.style.left = pt[0] + 'px';
+    wrap.style.top = pt[1] + 'px';
+    if (circleViewMode === 'dots') {
+      wrap.innerHTML = createStateCircleDotsHTML(uf, listN, seatColors, dotR).html;
+    } else {
+      wrap.innerHTML = createStateCircleSVG(uf, listN, seatColors);
+      const s = wrap.firstElementChild;
+      if (s) { s.setAttribute('width', '38'); s.setAttribute('height', '38'); }
+    }
+    const total = Object.values(stateSeats[uf] || {}).reduce((s, v) => s + v, 0);
+    wrap.title = `${UF_NAMES[uf] || uf}: ${listN} cadeira(s) de lista (total ${total})`;
+    wrap.addEventListener('click', () => selectMistoState(uf));
+    el.appendChild(wrap);
+  }
+
+  setCircleToggleVisible(true);
+}
+
+const MISTO_MODE_LABELS = {
+  paralelo: 'Paralelo (sem compensação)',
+  comp_overhang: 'Compensatório (mantém overhangs)',
+  comp_sem_overhang: 'Compensatório sem overhangs (alemão)'
+};
+
+// Render the results panel (chamber + bancadas table) for the mixed-member system.
+function renderMistoResultsList() {
+  const resultsList = document.getElementById('resultsList');
+  const resultsTitle = document.getElementById('resultsTitle');
+  const resultsSubtitle = document.getElementById('resultsSubtitle');
+  const simMetrics = document.getElementById('simMetrics');
+  resultsList.innerHTML = '';
+  simMetrics.innerHTML = '';
+
+  if (!mistoSimResults) {
+    resultsTitle.textContent = 'Distrital Misto';
+    resultsSubtitle.textContent = 'Dados não carregados';
+    return;
+  }
+
+  const {
+    mixedMode, nationalSeats, nationalDistrictSeats, nationalListSeats,
+    stateSeats, stateDistrictSeats, stateListSeats, stateNominalTotal,
+    partyNationalVotes, nationalValidVotes,
+    totalSeats, nominalTotal, totalDistricts, districtWinners
+  } = mistoSimResults;
+  const modeLabel = MISTO_MODE_LABELS[mixedMode] || mixedMode;
+
+  // Helper: build a Partido | Total | Distrital | Lista | %Votos table from maps.
+  const buildTable = (totalMap, distMap, listMap, voteMap, validVotes) => {
+    const parties = Object.keys(totalMap)
+      .filter(p => (totalMap[p] || 0) > 0 || (voteMap[p] || 0) > 0)
+      .map(p => ({
+        party: p,
+        seats: totalMap[p] || 0,
+        dist: distMap[p] || 0,
+        list: listMap[p] || 0,
+        votes: voteMap[p] || 0,
+        pct: validVotes > 0 ? ((voteMap[p] || 0) / validVotes) * 100 : 0,
+        color: getPartyColor(p),
+        cleanName: getCleanGroupName(p)
+      }))
+      .sort((a, b) => b.seats - a.seats || b.votes - a.votes);
+    const winner = parties[0] ? parties[0].party : null;
+
+    let rows = '';
+    parties.forEach(p => {
+      const isW = p.party === winner;
+      rows += `
+        <tr style="border-bottom:1px solid var(--border-color);${p.seats === 0 ? 'opacity:0.55;' : ''}">
+          <td style="text-align:left;padding:8px 6px;border-left:4px solid ${p.color};">
+            <span style="font-weight:${isW ? '700' : '500'};margin-left:4px;font-size:13px;">${p.cleanName}</span>
+            ${isW ? '<span style="font-size:10px;margin-left:6px;">✔</span>' : ''}
+          </td>
+          <td style="padding:8px 6px;text-align:right;font-weight:700;font-size:13px;">${p.seats}</td>
+          <td style="padding:8px 6px;text-align:right;font-size:12px;color:var(--text-sec);">${p.dist}</td>
+          <td style="padding:8px 6px;text-align:right;font-size:12px;color:var(--text-sec);">${p.list}</td>
+          <td style="padding:8px 6px;text-align:right;">
+            <div style="display:flex;align-items:center;gap:6px;justify-content:flex-end;">
+              <span style="font-weight:700;min-width:32px;font-size:11px;text-align:right;">${p.pct.toFixed(1)}%</span>
+              <div style="width:46px;height:6px;background:#262626;border-radius:2px;overflow:hidden;flex-shrink:0;">
+                <div style="width:${p.pct.toFixed(1)}%;height:100%;background:${p.color};"></div>
+              </div>
+            </div>
+          </td>
+        </tr>`;
+    });
+    if (!rows) rows = `<tr><td colspan="5" style="text-align:center;color:#777;padding:12px;">Sem dados</td></tr>`;
+    return `
+      <table class="district-nyt-table" style="color:var(--text);border-collapse:collapse;width:100%;">
+        <thead><tr>
+          <th style="text-align:left;color:var(--text-sec);border-bottom:1px solid var(--border-color);padding:6px;font-size:11px;">Partido</th>
+          <th style="text-align:right;color:var(--text-sec);border-bottom:1px solid var(--border-color);padding:6px;font-size:11px;">Total</th>
+          <th style="text-align:right;color:var(--text-sec);border-bottom:1px solid var(--border-color);padding:6px;font-size:11px;">Distr.</th>
+          <th style="text-align:right;color:var(--text-sec);border-bottom:1px solid var(--border-color);padding:6px;font-size:11px;">Lista</th>
+          <th style="text-align:right;color:var(--text-sec);border-bottom:1px solid var(--border-color);padding:6px;font-size:11px;width:90px;">% Votos</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+  };
+
+  if (selectedState === null) {
+    // ---- NATIONAL VIEW ----
+    resultsTitle.textContent = 'Brasil — Distrital Misto';
+    const extra = totalSeats - nominalTotal;
+    const overhangNote = extra > 0 ? ` (+${extra} overhang)` : '';
+    resultsSubtitle.textContent = `Câmara: ${totalSeats} cadeiras${overhangNote} · ${totalDistricts} distritais`;
+
+    const header = document.createElement('div');
+    header.style.cssText = 'background-color:#1c1c1c;border:1px solid var(--border-color);padding:12px;margin-bottom:16px;border-radius:var(--radius-md);';
+    header.innerHTML = `
+      <div style="display:inline-block;font-size:10px;font-weight:700;color:#fff;background:var(--ok);padding:2px 6px;margin-bottom:6px;letter-spacing:0.5px;border-radius:2px;">CÂMARA DOS DEPUTADOS</div>
+      <div style="font-family:var(--font-title);font-size:1.1rem;font-weight:700;line-height:1.3;color:#fff;margin-bottom:4px;">Voto Distrital Misto — ${modeLabel}</div>
+      <div style="font-size:12px;color:var(--text-sec);">
+        ${totalDistricts} distritos uninominais + cadeiras de lista proporcional, compensadas por estado.
+        Total nominal: <strong>${nominalTotal}</strong>${extra > 0 ? ` · cadeiras de overhang: <strong>${extra}</strong>` : ''}.
+      </div>`;
+    resultsList.appendChild(header);
+
+    const div = document.createElement('div');
+    div.innerHTML = buildTable(nationalSeats, nationalDistrictSeats, nationalListSeats, partyNationalVotes, nationalValidVotes)
+      + `<div style="font-size:11px;color:var(--muted);border-top:1px solid var(--border-color);padding-top:8px;margin-top:8px;text-align:right;">Votos válidos nacionais: <strong>${fmtInt(nationalValidVotes)}</strong></div>`;
+    resultsList.appendChild(div);
+
+    drawChamber(totalSeats, nationalSeats, partyNationalVotes, nationalValidVotes);
+
+  } else {
+    // ---- STATE VIEW ----
+    const uf = selectedState;
+    const stateName = UF_NAMES[uf] || uf;
+    const seats = stateSeats[uf] || {};
+    const dist = stateDistrictSeats[uf] || {};
+    const list = stateListSeats[uf] || {};
+    const stateTotal = Object.values(seats).reduce((s, v) => s + v, 0);
+    const T = stateNominalTotal[uf] || 0;
+    const D = districtWinners.filter(d => d.uf === uf).length;
+    const stripped = districtWinners.filter(d => d.uf === uf && d.overhangStripped).length;
+
+    // State-level votes for percentage display
+    const stateVotes = {};
+    let stateValid = 0;
+    if (officialTotals[uf] && officialTotals[uf].f) {
+      officialTotals[uf].f.coalitions.forEach(c => {
+        const k = getStandardFederationKey(c.id);
+        stateVotes[k] = (stateVotes[k] || 0) + c.votes;
+        stateValid += c.votes;
+      });
+    }
+
+    resultsTitle.textContent = `${stateName} (${uf})`;
+    const extra = stateTotal - T;
+    resultsSubtitle.textContent = `${stateTotal} cadeiras${extra > 0 ? ` (+${extra} overhang)` : ''} · ${D} distritais`;
+
+    const header = document.createElement('div');
+    header.style.cssText = 'background-color:#1c1c1c;border:1px solid var(--border-color);padding:12px;margin-bottom:16px;border-radius:var(--radius-md);';
+    header.innerHTML = `
+      <div style="display:inline-block;font-size:10px;font-weight:700;color:#fff;background:var(--accent);padding:2px 6px;margin-bottom:6px;letter-spacing:0.5px;border-radius:2px;">${uf}</div>
+      <div style="font-family:var(--font-title);font-size:1.05rem;font-weight:700;color:#fff;margin-bottom:4px;">Distrital Misto — ${modeLabel}</div>
+      <div style="font-size:12px;color:var(--text-sec);">
+        Total nominal do estado: <strong>${T}</strong> · ${D} distritos + ${Math.max(0, T - D)} de lista.
+        ${extra > 0 ? `Cadeiras de overhang: <strong>${extra}</strong>.` : ''}
+        ${stripped > 0 ? `<br><span style="color:var(--warn);">${stripped} distrito(s) com mandato perdido (overhang), marcado(s) com listras.</span>` : ''}
+      </div>`;
+    resultsList.appendChild(header);
+
+    const div = document.createElement('div');
+    div.innerHTML = buildTable(seats, dist, list, stateVotes, stateValid);
+    resultsList.appendChild(div);
+
+    drawChamber(stateTotal, seats, stateVotes, stateValid);
+  }
 }
 
 // Render the district map at national level
@@ -2849,36 +3596,58 @@ function setSystemType(type) {
   selectedDistrict = null;
   selectedRegion = null;
 
-  if (type === 'distrital') {
-    document.body.classList.add('mode-distrital');
+  // Tear down layers belonging to the mode we are leaving.
+  if (type !== 'distrital') {
+    if (distritosLayer) { glRemove(distritosLayer); distritosLayer = null; }
+    if (distritosMuniLayer) { glRemove(distritosMuniLayer); distritosMuniLayer = null; }
+  }
+  if (type !== 'misto') {
+    clearMistoOverhangOverlays();
+    clearMistoMiniMap();
+    if (distritosMistoLayer) { glRemove(distritosMistoLayer); distritosMistoLayer = null; }
+  }
 
-    // Run district simulation
+  document.body.classList.toggle('mode-distrital', type === 'distrital');
+  document.body.classList.toggle('mode-misto', type === 'misto');
+  updateConfigVisibility();
+
+  if (type === 'distrital') {
     runDistrictSimulation();
     renderDistrictMapNational();
     renderDistrictResultsList();
 
-    // Reset view to national
     if (selectedState !== null) {
       selectedState = null;
       fitNationalBounds();
     }
     document.getElementById('btnBackToNational').classList.add('hidden');
 
+  } else if (type === 'misto') {
+    if (selectedState !== null) { selectedState = null; }
+    document.getElementById('btnBackToNational').classList.add('hidden');
 
+    const loader = document.getElementById('mapLoader');
+    const loaderText = document.getElementById('loaderText');
+    if (loaderText) loaderText.textContent = 'Carregando distritos do voto misto...';
+    if (loader) loader.classList.add('visible');
+
+    ensureMistoDataLoaded().then(ok => {
+      if (loader) loader.classList.remove('visible');
+      if (currentSystemType !== 'misto') return; // user switched away while loading
+      if (!ok) {
+        mistoSimResults = null;
+        renderMistoResultsList();
+        return;
+      }
+      runMistoSimulation();
+      renderMistoMap();
+      renderMistoResultsList();
+      fitNationalBounds();
+    }).catch(() => {
+      if (loader) loader.classList.remove('visible');
+    });
 
   } else {
-    document.body.classList.remove('mode-distrital');
-
-    // Remove district layers
-    if (distritosLayer) {
-      glRemove(distritosLayer);
-      distritosLayer = null;
-    }
-    if (distritosMuniLayer) {
-      glRemove(distritosMuniLayer);
-      distritosMuniLayer = null;
-    }
-
     // Return to proportional mode
     if (selectedState !== null || selectedRegion !== null) {
       selectedState = null;
@@ -2886,8 +3655,6 @@ function setSystemType(type) {
       fitNationalBounds();
     }
     document.getElementById('btnBackToNational').classList.add('hidden');
-
-
 
     runSimulation();
     renderResultsList();
@@ -2956,6 +3723,46 @@ async function fetchDistritosGeoJSON() {
   }
   if (features.length === 0) return null;
   return { type: 'FeatureCollection', features };
+}
+
+// Mixed-member ("Tamanho Americano") district geometries, split per state, NOT simplified.
+async function fetchDistritosMistoGeoJSON() {
+  const ufs = Object.values(UF_CODE_TO_SIGLA);
+  const parts = await Promise.all(
+    ufs.map(uf =>
+      fetchGeoJSON(`${DATA_BASE_URL}distritos_misto/distritos_misto_${uf}.geojson`)
+        .catch(err => {
+          console.warn(`Falha ao carregar distritos misto do estado ${uf}:`, err);
+          return null;
+        })
+    )
+  );
+  const features = [];
+  for (const part of parts) {
+    if (part && part.features) features.push(...part.features);
+  }
+  if (features.length === 0) return null;
+  return { type: 'FeatureCollection', features };
+}
+
+// Lazily load the mixed-member geometries + per-district votes the first time the
+// user picks the "misto" system, so the initial page load stays light.
+async function ensureMistoDataLoaded() {
+  if (distritosMistoGeoJSON && distritosMistoVotosData) return true;
+  if (mistoDataLoading) return mistoDataLoading;
+  mistoDataLoading = (async () => {
+    const [geo, votos] = await Promise.all([
+      distritosMistoGeoJSON ? Promise.resolve(distritosMistoGeoJSON) : fetchDistritosMistoGeoJSON(),
+      distritosMistoVotosData ? Promise.resolve(distritosMistoVotosData)
+        : fetchGeoJSON(DATA_BASE_URL + 'distritos_misto_votos.json').catch(() => null)
+    ]);
+    distritosMistoGeoJSON = geo;
+    distritosMistoVotosData = votos;
+    return !!(geo && votos);
+  })();
+  const ok = await mistoDataLoading;
+  mistoDataLoading = null;
+  return ok;
 }
 
 async function fetchDeputyData(uf) {
@@ -3215,6 +4022,35 @@ function updateConfigVisibility() {
       selectSystem.value = 'proporcional';
       setSystemType('proporcional');
     }
+  }
+
+  // ---- Distrital Misto (MMP): controles dedicados (Nacional apenas) ----
+  // Mantém: Base de Votos, Distribuição de Cadeiras por Estado, Método de Distribuição
+  // e o seletor exclusivo (Tipo de Sistema Misto, mostrado via .misto-only/.mode-misto).
+  // Oculta (via CSS .mode-misto): cláusulas e tipo de circunscrição.
+  if (!isEstadual && currentSystemType === 'misto') {
+    const seatDistSelect = document.getElementById('selectSeatDistribution');
+    const seatDistLabel = document.getElementById('seatDistributionLabel');
+    const seatDistSection = document.getElementById('seatDistributionSection');
+    if (seatDistLabel) seatDistLabel.textContent = 'Distribuição de Cadeiras por Estado';
+    if (seatDistSelect && seatDistSelect.querySelector('option[value="real"]')) {
+      // Restringe às duas alocações de Câmara com cadeiras suficientes para distritos + lista
+      const prev = seatDistSelect.value;
+      seatDistSelect.innerHTML = `
+        <option value="fair">Proporcional (513 cadeiras)</option>
+        <option value="cubicroot">Raiz Cúbica (588 cadeiras)</option>
+      `;
+      seatDistSelect.value = (prev === 'cubicroot') ? 'cubicroot' : 'fair';
+    }
+    if (seatDistSection) seatDistSection.style.display = '';
+    // Cláusulas de barreira ficam visíveis e aplicáveis no misto
+    const fedSec = document.getElementById('federalBarrierSection');
+    if (fedSec) fedSec.style.display = '';
+    const stSec = document.getElementById('stateBarrierSection');
+    if (stSec) stSec.style.display = '';
+    // Base de votos (presidente/deputado) do nível nacional
+    updateVoteBaseOptions();
+    return;
   }
 
   // Circumscription type — "Nacional" option only available when level=nacional
@@ -6664,6 +7500,9 @@ async function redrawCircles() {
   if (currentConfig.circumscription === 'regional') {
     // Semilocal mode: only clear/redraw the circle markers
     drawSemilocalCircles();
+  } else if (currentSystemType === 'misto' && selectedState === null) {
+    // Mixed-member national: redraw the proportional-seat mini-map (dots ↔ pizza)
+    renderMistoMiniMap();
   } else if (currentSystemType === 'proporcional' && selectedState === null) {
     // National proportional: clear and redraw state circles
     clearStateCircles();
@@ -9548,7 +10387,7 @@ function renderMap() {
 
   // Clear regional-map insets/outlines, EXCEPT when the regional (semilocal) map is
   // about to render — there they are reused/restyled in place to avoid flicker.
-  const willRenderSemilocal = currentSystemType !== 'distrital'
+  const willRenderSemilocal = currentSystemType === 'proporcional'
     && currentConfig.seatDistribution !== 'senado_regionalizado_1'
     && currentConfig.seatDistribution !== 'senado_regionalizado_2'
     && currentConfig.circumscription === 'regional'
@@ -9571,6 +10410,15 @@ function renderMap() {
   if (currentSystemType === 'distrital') {
     setCircleToggleVisible(false);
     renderDistrictMapNational();
+    const minimapEl = document.getElementById('regionMiniMap');
+    if (minimapEl) minimapEl.classList.add('hidden');
+    return;
+  }
+
+  // If in mixed-member mode, delegate to the misto renderer
+  if (currentSystemType === 'misto') {
+    setCircleToggleVisible(false);
+    renderMistoMap();
     const minimapEl = document.getElementById('regionMiniMap');
     if (minimapEl) minimapEl.classList.add('hidden');
     return;
@@ -9970,6 +10818,10 @@ function backToNational() {
   if (currentSystemType === 'distrital') {
     renderDistrictMapNational();
     renderDistrictResultsList();
+  } else if (currentSystemType === 'misto') {
+    runMistoSimulation();
+    renderMistoMap();
+    renderMistoResultsList();
   } else {
     renderResultsList();
     renderMap();
@@ -10559,6 +11411,10 @@ async function initApp() {
         runDistrictSimulation();
         renderDistrictMapNational();
         renderDistrictResultsList();
+      } else if (currentSystemType === 'misto') {
+        runMistoSimulation();
+        renderMistoMap();
+        renderMistoResultsList();
       } else {
         runSimulation();
         renderResultsList();
@@ -10571,12 +11427,27 @@ async function initApp() {
         runDistrictSimulation();
         renderDistrictMapNational();
         renderDistrictResultsList();
+      } else if (currentSystemType === 'misto') {
+        runMistoSimulation();
+        renderMistoMap();
+        renderMistoResultsList();
       } else {
         runSimulation();
         renderResultsList();
         renderMap();
       }
     });
+
+    // Mixed-member sub-mode selector (paralelo / compensatório / alemão)
+    const selectMixedMode = document.getElementById('selectMixedMode');
+    if (selectMixedMode) {
+      selectMixedMode.addEventListener('change', () => {
+        if (currentSystemType !== 'misto') return;
+        runMistoSimulation();
+        renderMistoMap();
+        renderMistoResultsList();
+      });
+    }
 
     // Election level selector (Nacional vs Estadual)
     document.getElementById('selectElectionLevel').addEventListener('change', (e) => {
@@ -10718,6 +11589,15 @@ async function initApp() {
         runDistrictSimulation();
         renderDistrictMapNational();
         renderDistrictResultsList();
+      } else if (currentSystemType === 'misto') {
+        selectedState = null;
+        selectedDistrict = null;
+        selectedRegion = null;
+        fitNationalBounds();
+        document.getElementById('btnBackToNational').classList.add('hidden');
+        runMistoSimulation();
+        renderMistoMap();
+        renderMistoResultsList();
       } else {
         if (selectedState !== null) {
           await selectState(selectedState);
@@ -10734,6 +11614,10 @@ async function initApp() {
         runDistrictSimulation();
         renderDistrictMapNational();
         renderDistrictResultsList();
+      } else if (currentSystemType === 'misto') {
+        runMistoSimulation();
+        renderMistoMap();
+        renderMistoResultsList();
       } else {
         runSimulation();
         renderResultsList();
@@ -10785,6 +11669,43 @@ async function initApp() {
     const stateBarrierSettings = document.getElementById('stateBarrierSettings');
     toggleStateBarrier.addEventListener('change', () => {
       stateBarrierSettings.classList.toggle('hidden', !toggleStateBarrier.checked);
+    });
+
+    // ── Distrital Misto: cláusula de desempenho distrital + reaplicação ao vivo ──
+    const rerunMistoIfActive = () => {
+      if (currentSystemType !== 'misto') return;
+      runMistoSimulation();
+      renderMistoMap();
+      renderMistoResultsList();
+    };
+
+    const toggleMinDistricts = document.getElementById('toggleMinDistricts');
+    const minDistrictsSettings = document.getElementById('minDistrictsSettings');
+    const sliderMinDistricts = document.getElementById('sliderMinDistricts');
+    const valMinDistricts = document.getElementById('valMinDistricts');
+    if (toggleMinDistricts && minDistrictsSettings) {
+      toggleMinDistricts.addEventListener('change', () => {
+        minDistrictsSettings.classList.toggle('hidden', !toggleMinDistricts.checked);
+        rerunMistoIfActive();
+      });
+    }
+    if (sliderMinDistricts && valMinDistricts) {
+      sliderMinDistricts.addEventListener('input', () => {
+        const n = parseInt(sliderMinDistricts.value) || 0;
+        valMinDistricts.textContent = `${n} distrito${n === 1 ? '' : 's'}`;
+      });
+      sliderMinDistricts.addEventListener('change', rerunMistoIfActive);
+    }
+
+    // In misto mode the barrier toggles/sliders re-apply immediately (the proportional
+    // flow applies them via the "Aplicar Cláusulas" button, which also handles misto).
+    ['toggleFederalBarrier', 'toggleStateBarrier'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('change', rerunMistoIfActive);
+    });
+    ['sliderFederalBarrier', 'sliderStateBarrier'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('change', rerunMistoIfActive);
     });
 
 

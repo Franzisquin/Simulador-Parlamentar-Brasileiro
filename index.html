@@ -16,9 +16,11 @@
   <!-- Typography -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&family=Libre+Franklin:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&family=Libre+Franklin:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
 
-  <link rel="stylesheet" href="style.css?v=20260606-2" />
+  <link rel="stylesheet" href="style.css?v=20260618-3" />
 </head>
 
 <body data-theme="dark">
@@ -39,7 +41,7 @@
         <h2 class="panel-title">Configurações Eleitorais</h2>
       </div>
       <div class="body">
-        
+
         <!-- Nível de Eleição -->
         <div class="config-section">
           <h3>Nível de Eleição</h3>
@@ -125,7 +127,41 @@
           <select id="selectSystemType" class="select">
             <option value="proporcional" selected>Proporcional</option>
             <option value="distrital">Distrital (Uninominal / Majoritário)</option>
+            <option value="misto">Distrital Misto (MMP)</option>
           </select>
+        </div>
+
+        <!-- Tipo de Sistema Misto (visível apenas no modo misto) -->
+        <div class="config-section misto-only" id="mixedModeSection">
+          <h3>Tipo de Sistema Misto</h3>
+          <select id="selectMixedMode" class="select">
+            <option value="paralelo" selected>Paralelo (sem compensação)</option>
+            <option value="comp_overhang">Compensatório (mantém overhangs)</option>
+            <option value="comp_sem_overhang">Compensatório sem overhangs (alemão)</option>
+          </select>
+          <small class="help-text" id="helpMixedMode"></small>
+        </div>
+
+        <!-- Cláusula de Desempenho Distrital (exclusiva do modo misto) -->
+        <div class="config-section misto-only" id="minDistrictsSection">
+          <div class="section-title-row">
+            <h3>Cláusula de Desempenho Distrital</h3>
+            <label class="switch">
+              <input type="checkbox" id="toggleMinDistricts">
+              <span class="slider-switch"></span>
+            </label>
+          </div>
+          <div id="minDistrictsSettings" class="collapsible-settings hidden">
+            <div class="slider-box" style="margin-top: 10px;">
+              <div class="slider-header">
+                <span class="slider-value" id="valMinDistricts">5 distritos</span>
+              </div>
+              <input type="range" class="simple-slider" id="sliderMinDistricts" min="1" max="20" step="1" value="5">
+              <small class="help-text" id="helpMinDistricts">Partido que vença pelo menos este número de distritos
+                recebe cadeiras de lista mesmo sem atingir a cláusula de barreira (equivale a tê-la cumprido — estilo
+                cláusula de mandato básico alemã).</small>
+            </div>
+          </div>
         </div>
 
         <!-- Método de Distribuição -->
@@ -155,7 +191,9 @@
             <option value="populacao" selected>População residente</option>
             <option value="eleitorado">Eleitorado (votos válidos)</option>
           </select>
-          <small class="help-text">Reparte as cadeiras entre os distritos pela população residente ou pelo total de votos válidos (eleitorado ativo nos locais de votação) de cada distrito na eleição selecionada. Cada distrito recebe no mínimo 1 cadeira.</small>
+          <small class="help-text">Reparte as cadeiras entre os distritos pela população residente ou pelo total de
+            votos válidos (eleitorado ativo nos locais de votação) de cada distrito na eleição selecionada. Cada
+            distrito recebe no mínimo 1 cadeira.</small>
         </div>
 
         <!-- Distribuição das Cadeiras por Estado -->
@@ -211,8 +249,10 @@
               <div class="slider-header">
                 <span class="slider-value" id="valFederalBarrier">2.0%</span>
               </div>
-              <input type="range" class="simple-slider" id="sliderFederalBarrier" min="0.5" max="10.0" step="0.1" value="2.0">
-              <small class="help-text" id="helpFederalBarrier">Porcentagem mínima de votos válidos necessária para o partido eleger deputados.</small>
+              <input type="range" class="simple-slider" id="sliderFederalBarrier" min="0.5" max="10.0" step="0.1"
+                value="2.0">
+              <small class="help-text" id="helpFederalBarrier">Porcentagem mínima de votos válidos necessária para o
+                partido eleger deputados.</small>
             </div>
           </div>
         </div>
@@ -231,8 +271,10 @@
               <div class="slider-header">
                 <span class="slider-value" id="valStateBarrier">1.5%</span>
               </div>
-              <input type="range" class="simple-slider" id="sliderStateBarrier" min="0.5" max="10.0" step="0.1" value="1.5">
-              <small class="help-text" id="helpStateBarrier">Partido precisa de 1.5% dos votos da circunscrição para receber cadeiras.</small>
+              <input type="range" class="simple-slider" id="sliderStateBarrier" min="0.5" max="10.0" step="0.1"
+                value="1.5">
+              <small class="help-text" id="helpStateBarrier">Partido precisa de 1.5% dos votos da circunscrição para
+                receber cadeiras.</small>
             </div>
           </div>
         </div>
@@ -247,21 +289,28 @@
             </label>
           </div>
           <small class="help-text">
-            Simula como seria a eleição parlamentar se as coligações para a presidência da República fossem aplicadas nacionalmente (Brasil da Esperança, Brasil para Todos e Pelo Bem do Brasil).
+            Simula como seria a eleição parlamentar se as coligações para a presidência da República fossem aplicadas
+            nacionalmente (Brasil da Esperança, Brasil para Todos e Pelo Bem do Brasil).
           </small>
         </div>
 
 
         <!-- Botão Aplicar -->
         <button id="btnApplySimulation" class="btn btn-apply">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
           Aplicar Cláusulas
         </button>
 
         <!-- Rodapé de Licença e Copyright -->
-        <div style="margin-top: 24px; padding-top: 12px; border-top: 1px solid var(--border-color); text-align: center; font-size: 11px; color: var(--muted);">
+        <div
+          style="margin-top: 24px; padding-top: 12px; border-top: 1px solid var(--border-color); text-align: center; font-size: 11px; color: var(--muted);">
           <div>&copy; 2026 Franzisquin</div>
-          <div style="margin-top: 4px;">Licenciado sob <a href="https://creativecommons.org/licenses/by-nc/4.0/deed.pt-br" target="_blank" style="color: var(--accent); text-decoration: none;">CC BY-NC 4.0</a></div>
+          <div style="margin-top: 4px;">Licenciado sob <a
+              href="https://creativecommons.org/licenses/by-nc/4.0/deed.pt-br" target="_blank"
+              style="color: var(--accent); text-decoration: none;">CC BY-NC 4.0</a></div>
         </div>
 
       </div>
@@ -274,22 +323,40 @@
       <!-- Circle view mode toggle: floating, centered at top of map -->
       <div id="circleViewToggle" class="circle-view-toggle hidden">
         <button id="btnCirclePizza" class="circle-view-btn" title="Setores por circunscrição">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="5"/></svg>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            style="flex-shrink:0;">
+            <circle cx="12" cy="12" r="10" />
+            <circle cx="12" cy="12" r="5" />
+          </svg>
           Setores
         </button>
         <button id="btnCircleDots" class="circle-view-btn active" title="Dot Plot (uma bolinha por deputado)">
-          <svg width="14" height="10" viewBox="0 0 21 14" fill="currentColor" style="flex-shrink:0;"><circle cx="3.5" cy="3.5" r="3"/><circle cx="10.5" cy="3.5" r="3"/><circle cx="17.5" cy="3.5" r="3"/><circle cx="3.5" cy="10.5" r="3"/><circle cx="10.5" cy="10.5" r="3"/><circle cx="17.5" cy="10.5" r="3"/></svg>
+          <svg width="14" height="10" viewBox="0 0 21 14" fill="currentColor" style="flex-shrink:0;">
+            <circle cx="3.5" cy="3.5" r="3" />
+            <circle cx="10.5" cy="3.5" r="3" />
+            <circle cx="17.5" cy="3.5" r="3" />
+            <circle cx="3.5" cy="10.5" r="3" />
+            <circle cx="10.5" cy="10.5" r="3" />
+            <circle cx="17.5" cy="10.5" r="3" />
+          </svg>
           Dot Plot
         </button>
       </div>
       <button id="btnBackToNational" class="btn-back-national hidden" title="Voltar para o Brasil">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;">
+          <line x1="19" y1="12" x2="5" y2="12"></line>
+          <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
         Brasil todo
       </button>
       <div id="regionMiniMap" class="region-minimap-container hidden">
         <div id="regionMiniMapBody" class="region-minimap-body"></div>
       </div>
-      <div id="regionTooltip" class="chamber-tooltip hidden" style="position: absolute; pointer-events: none; z-index: 3000;"></div>
+      <!-- Mini-mapa dos estados com dot-plots das cadeiras proporcionais (modo misto) -->
+      <div id="mistoMiniMap" class="misto-minimap hidden"></div>
+      <div id="regionTooltip" class="chamber-tooltip hidden"
+        style="position: absolute; pointer-events: none; z-index: 3000;"></div>
       <div class="loader-overlay" id="mapLoader">
         <div class="spinner"></div>
         <span id="loaderText">Carregando dados...</span>
@@ -310,8 +377,10 @@
           <svg id="chamberSvg" viewBox="0 65 600 305" width="100%" preserveAspectRatio="xMidYMin meet"></svg>
           <div id="chamberTooltip" class="chamber-tooltip hidden"></div>
         </div>
-        <button id="btnPactometro" class="btn btn-apply" style="margin-top: 10px; width: 100%; display: inline-flex; justify-content: center; gap: 8px; background: linear-gradient(135deg, var(--warn), #d97706); box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25); border: none;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <button id="btnPactometro" class="btn btn-apply"
+          style="margin-top: 10px; width: 100%; display: inline-flex; justify-content: center; gap: 8px; background: linear-gradient(135deg, var(--warn), #d97706); box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25); border: none;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
             <circle cx="9" cy="7" r="4"></circle>
             <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
@@ -329,7 +398,8 @@
 
         <!-- PROPORTIONAL LIST -->
         <div class="section-title-row" style="margin: 12px 0 6px 0;">
-          <h3 style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--muted)">Bancadas e Eleitos</h3>
+          <h3 style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--muted)">Bancadas e
+            Eleitos</h3>
         </div>
         <div id="resultsList" class="results-list">
           <!-- Dinamicamente gerado -->
@@ -343,7 +413,8 @@
     <div class="modal-content">
       <div class="modal-header">
         <h2>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;">
             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
             <circle cx="9" cy="7" r="4"></circle>
             <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
@@ -357,10 +428,11 @@
         <div class="pactometro-layout">
           <!-- Semicircle identical to the main one -->
           <div class="pactometro-chamber-container">
-            <svg id="pactometroChamberSvg" viewBox="0 65 600 305" width="100%" preserveAspectRatio="xMidYMin meet"></svg>
+            <svg id="pactometroChamberSvg" viewBox="0 65 600 305" width="100%"
+              preserveAspectRatio="xMidYMin meet"></svg>
             <div id="pactometroChamberTooltip" class="chamber-tooltip hidden"></div>
           </div>
-          
+
           <!-- Control panel -->
           <div class="pactometro-controls">
             <div class="coalition-stats">
@@ -370,13 +442,13 @@
               </div>
               <div class="stat-status" id="pactStatusText">Selecione partidos para formar uma maioria</div>
             </div>
-            
+
             <!-- Progress bar -->
             <div class="pact-progress-bar-container">
               <div class="pact-progress-bar" id="pactProgressBar" style="width: 0%;"></div>
               <div class="pact-progress-marker" id="pactProgressMarker" style="left: 50.1%;"></div>
             </div>
-            
+
             <!-- Party Selector List -->
             <div class="pact-parties-list" id="pactPartiesList"></div>
           </div>
@@ -388,21 +460,37 @@
   <!-- MOBILE BOTTOM NAVIGATION (visível apenas em telas pequenas) -->
   <nav class="mobile-nav" id="mobileNav" aria-label="Navegação">
     <button type="button" class="mobile-nav-btn" data-mobile-tab="config" aria-label="Configurações">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"></circle>
+        <path
+          d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z">
+        </path>
+      </svg>
       <span>Configurações</span>
     </button>
     <button type="button" class="mobile-nav-btn active" data-mobile-tab="map" aria-label="Mapa">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon><line x1="8" y1="2" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="22"></line></svg>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
+        <line x1="8" y1="2" x2="8" y2="18"></line>
+        <line x1="16" y1="6" x2="16" y2="22"></line>
+      </svg>
       <span>Mapa</span>
     </button>
     <button type="button" class="mobile-nav-btn" data-mobile-tab="results" aria-label="Resultados">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="20" x2="18" y2="10"></line>
+        <line x1="12" y1="20" x2="12" y2="4"></line>
+        <line x1="6" y1="20" x2="6" y2="14"></line>
+      </svg>
       <span>Resultados</span>
     </button>
   </nav>
 
   <!-- SCRIPT -->
-  <script src="simulador.js?v=20260606-6"></script>
+  <script src="simulador.js?v=20260618-3"></script>
 
   <!-- MOBILE NAVIGATION CONTROLLER -->
   <script>
