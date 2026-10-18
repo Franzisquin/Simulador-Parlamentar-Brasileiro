@@ -4,6 +4,18 @@
 
 const DATA_BASE_URL = 'resultados_geo/';
 
+// Versão dos dados = o ?v= do <script src="simulador.js?v=..."> no index.html. Vai em toda
+// requisição de dados para o navegador não reaproveitar arquivos antigos do cache depois
+// de uma publicação (o GitHub Pages manda cache de 10 min).
+const DATA_VERSION = (() => {
+  try { return new URL(document.currentScript.src).searchParams.get('v') || ''; } catch (e) { return ''; }
+})();
+
+function withDataVersion(url) {
+  if (!DATA_VERSION) return url;
+  return url + (url.includes('?') ? '&' : '?') + 'v=' + encodeURIComponent(DATA_VERSION);
+}
+
 // Populations Censo 2000, 2010, 2022 (IBGE)
 const CENSUS_POPULATIONS = {
   2000: {
@@ -3816,7 +3828,7 @@ function setSystemType(type) {
 // Zip loaders
 async function loadZipIndex() {
   try {
-    const res = await fetch(DATA_BASE_URL + 'zip_index.json');
+    const res = await fetch(withDataVersion(DATA_BASE_URL + 'zip_index.json'));
     if (res.ok) {
       ZIP_INDEX = await res.json();
     } else {
@@ -3836,7 +3848,7 @@ async function fetchGeoJSON(path) {
     const zipUrl = DATA_BASE_URL + entry.zip;
     let reader = ZIP_READERS.get(zipUrl);
     if (!reader) {
-      reader = await unzipit.unzip(zipUrl);
+      reader = await unzipit.unzip(withDataVersion(zipUrl));
       ZIP_READERS.set(zipUrl, reader);
     }
     let fileEntry = reader.entries[entry.file];
@@ -3850,7 +3862,7 @@ async function fetchGeoJSON(path) {
     const blob = await fileEntry.blob('application/json');
     return JSON.parse(await blob.text());
   }
-  const response = await fetch(path);
+  const response = await fetch(withDataVersion(path));
   return await response.json();
 }
 
@@ -3919,7 +3931,7 @@ async function ensureMistoDataLoaded() {
 async function fetchDeputyData(uf) {
   const zipUrl = `${DATA_BASE_URL}Legislativas ${currentYear}/deputados_federal_${currentYear}_${uf}.zip`;
   const jsonName = `deputados_federal_${currentYear}_${uf}.json`;
-  const reader = await unzipit.unzip(zipUrl);
+  const reader = await unzipit.unzip(withDataVersion(zipUrl));
   const fileEntry = reader.entries[jsonName];
   if (!fileEntry) throw new Error(`File ${jsonName} not found in zip`);
   const blob = await fileEntry.blob('application/json');
@@ -3929,7 +3941,7 @@ async function fetchDeputyData(uf) {
 async function fetchPresidentData(uf) {
   const zipUrl = `${DATA_BASE_URL}Majoritarias ${currentYear}/presidente_${currentYear}_t1_${uf}.zip`;
   const jsonName = `presidente_${currentYear}_t1_${uf}.json`;
-  const reader = await unzipit.unzip(zipUrl);
+  const reader = await unzipit.unzip(withDataVersion(zipUrl));
   const fileEntry = reader.entries[jsonName];
   if (!fileEntry) throw new Error(`File ${jsonName} not found in zip`);
   const blob = await fileEntry.blob('application/json');
@@ -3940,7 +3952,7 @@ async function fetchGovernorData(uf) {
   const isOrd = (currentYear === 2014 || currentYear === 2010 || currentYear === 2006);
   const zipUrl = `${DATA_BASE_URL}Majoritarias ${currentYear}/governador_${currentYear}${isOrd ? '_ord' : ''}_t1_${uf}.zip`;
   const jsonName = `governador_${currentYear}${isOrd ? '_ord' : ''}_t1_${uf}.json`;
-  const reader = await unzipit.unzip(zipUrl);
+  const reader = await unzipit.unzip(withDataVersion(zipUrl));
   const fileEntry = reader.entries[jsonName];
   if (!fileEntry) throw new Error(`File ${jsonName} not found in zip`);
   const blob = await fileEntry.blob('application/json');
@@ -8189,7 +8201,7 @@ let cachedSenadoSvg = null;
 async function loadSenadoSvg() {
   if (cachedSenadoSvg) return cachedSenadoSvg;
   try {
-    const response = await fetch('Senado Regionalizado.svg');
+    const response = await fetch(withDataVersion('Senado Regionalizado.svg'));
     if (!response.ok) throw new Error('Failed to load Senado Regionalizado.svg');
     const text = await response.text();
     const parser = new DOMParser();
@@ -9114,7 +9126,7 @@ let cachedDeputadosSemilocalSvg = null;
 async function loadDeputadosSemilocalSvg() {
   if (cachedDeputadosSemilocalSvg) return cachedDeputadosSemilocalSvg;
   try {
-    const response = await fetch('Deputados Semilocal.svg');
+    const response = await fetch(withDataVersion('Deputados Semilocal.svg'));
     if (!response.ok) throw new Error('Failed to load Deputados Semilocal.svg');
     const text = await response.text();
     const parser = new DOMParser();
@@ -11440,7 +11452,7 @@ async function initApp() {
       fetchDistritosGeoJSON(),
       fetchGeoJSON(DATA_BASE_URL + 'distritos_votos.json').catch(() => null),
       fetchGeoJSON(DATA_BASE_URL + 'distritos_detalhe_munis.json').catch(() => null),
-      d3.csv("Deputados População Circuitos.csv").catch(() => []),
+      d3.csv(withDataVersion("Deputados População Circuitos.csv")).catch(() => []),
       fetchGeoJSON(DATA_BASE_URL + 'semilocal_votos.json').catch(() => null),
       fetchGeoJSON(DATA_BASE_URL + 'semilocal_circuitos.geojson').catch(() => null),
       fetchGeoJSON(DATA_BASE_URL + 'semilocal_insets.geojson').catch(() => null),
