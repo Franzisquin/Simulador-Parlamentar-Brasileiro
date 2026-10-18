@@ -11,9 +11,12 @@ Saída em resultados_geo/Legislativas 2026/:
   deputados_estadual_2026_<UF>.zip  (idem; no DF, Deputado Distrital)
   official_totals_2026.json         vagas, quociente eleitoral, votos e eleitos por agremiação
 
-RESULTS usa a chave zona_municipioTSE_local, a mesma dos pontos em locais_votacao_2026.
+RESULTS usa a chave zona_municipioTSE_local dos pontos em locais_votacao_2026 (cadastro do
+Observatório). Como o TSE renumera parte dos locais, cada seção (zona + seção) vai para o local
+do cadastro que a contém, o mesmo critério dos resultados de presidente e governador; só uma
+seção fora do cadastro usaria o NR_LOCAL_VOTACAO do TSE.
 
-Uso: python3 scratch/gerar_legislativas_2026.py /pasta/com/os/zips/do/TSE
+Uso: python3 scratch/gerar_legislativas_2026.py /pasta/com/os/zips/do/TSE /caminho/do/Observatorio [UF ...]
      (os votacao_secao_2026_<UF>.zip podem estar nessa pasta ou em <pasta>/secao)
 """
 
@@ -95,41 +98,69 @@ def load_candidates(cand_zip, uf):
 
 
 def load_party_votes(party_zip, uf):
-    """cargo -> NR_PARTIDO -> {sigla, comp, tp, legenda_validos, nominais_validos}."""
+    """cargo -> NR_PARTIDO -> {sigla, comp, tp, legenda_validos, nominais_validos}, e a sigla
+    de cada número de partido em qualquer cargo da UF."""
     parties = {'federal': {}, 'estadual': {}}
+    siglas = {}
     for idx, row in read_csv(party_zip, f'votacao_partido_munzona_{YEAR}_{uf}.csv'):
+        nr = str(int(row[idx['NR_PARTIDO']]))
+        sg = clean(row[idx['SG_PARTIDO']])
+        siglas.setdefault(nr, sg)
         tipo = CARGO_DEF.get(row[idx['CD_CARGO']])
         if not tipo or row[idx['NR_TURNO']] != '1':
             continue
-        nr = str(int(row[idx['NR_PARTIDO']]))
-        sg = clean(row[idx['SG_PARTIDO']])
         tp, comp = agremiacao_of(clean(row[idx['TP_AGREMIACAO']]), sg,
                                  clean(row[idx['NM_FEDERACAO']]), clean(row[idx['DS_COMPOSICAO_FEDERACAO']]))
         p = parties[tipo].setdefault(nr, {'sigla': sg, 'tp': tp, 'comp': comp, 'legenda': 0, 'nominais': 0})
         p['legenda'] += int(row[idx['QT_TOTAL_VOTOS_LEG_VALIDOS']] or 0)
         p['nominais'] += int(row[idx['QT_VOTOS_NOMINAIS_VALIDOS']] or 0)
-    return parties
+    return parties, siglas
 
 
-def load_section_votes(secao_zip_path, uf):
-    """cargo -> local -> NR_VOTAVEL -> votos (1º turno), e nomes vistos na urna."""
+def load_national_siglas(party_zip):
+    """Sigla de cada número de partido no país (para partido que não concorreu na UF)."""
+    siglas = {}
+    for idx, row in read_csv(party_zip, f'votacao_partido_munzona_{YEAR}_BRASIL.csv'):
+        siglas.setdefault(str(int(row[idx['NR_PARTIDO']])), clean(row[idx['SG_PARTIDO']]))
+    return siglas
+
+
+def load_section_map(obs_dir, uf):
+    """(zona, seção) -> chave do local no cadastro de locais de 2026 do Observatório."""
+    with open(os.path.join(obs_dir, 'resultados_geo', 'locais_votacao', f'{uf.lower()}-{YEAR}.json'), encoding='utf-8') as fh:
+        cadastro = json.load(fh)
+    sec2loc = {}
+    for loc in cadastro['locais']:
+        key = f"{int(loc['z'])}_{int(loc['mun'])}_{int(loc['n'])}"
+        for sec in loc.get('sec') or []:
+            sec2loc[(int(sec['z']), int(sec['s']))] = key
+    return sec2loc
+
+
+def load_section_votes(secao_zip_path, uf, sec2loc):
+    """cargo -> local -> NR_VOTAVEL -> votos (1º turno), nomes vistos na urna e votos de
+    seções fora do cadastro."""
     results = {'federal': defaultdict(lambda: defaultdict(int)), 'estadual': defaultdict(lambda: defaultdict(int))}
     names = {'federal': {}, 'estadual': {}}
+    fora = 0
     with zipfile.ZipFile(secao_zip_path) as zf:
         csv_name = next(n for n in zf.namelist() if n.lower().endswith('.csv'))
         for idx, row in read_csv(zf, csv_name):
             tipo = CARGO_DEF.get(row[idx['CD_CARGO']])
             if not tipo or row[idx['NR_TURNO']] != '1':
                 continue
-            key = f"{int(row[idx['NR_ZONA']])}_{int(row[idx['CD_MUNICIPIO']])}_{int(row[idx['NR_LOCAL_VOTACAO']])}"
+            key = sec2loc.get((int(row[idx['NR_ZONA']]), int(row[idx['NR_SECAO']])))
+            if key is None:
+                key = f"{int(row[idx['NR_ZONA']])}_{int(row[idx['CD_MUNICIPIO']])}_{int(row[idx['NR_LOCAL_VOTACAO']])}"
+                fora += int(row[idx['QT_VOTOS']] or 0)
             nr = str(int(row[idx['NR_VOTAVEL']]))
             results[tipo][key][nr] += int(row[idx['QT_VOTOS']] or 0)
             if nr not in names[tipo]:
                 names[tipo][nr] = row[idx['NM_VOTAVEL']].strip()
-    return results, names
+    return results, names, fora
 
 
-def build_cand_names(tipo_cands, tipo_parties, results, seen_names):
+def build_cand_names(tipo_cands, tipo_parties, siglas, results, seen_names):
     cand_names = {}
     voted = {nr for votes in results.values() for nr in votes}
     for nr, c in tipo_cands.items():
@@ -139,7 +170,11 @@ def build_cand_names(tipo_cands, tipo_parties, results, seen_names):
             continue
         if len(nr) <= 2:
             p = tipo_parties.get(nr)
-            cand_names[nr] = ['VOTO DE LEGENDA', p['sigla'] if p else f'PARTIDO {nr}', 'LEGENDA', '', '']
+            if p:
+                cand_names[nr] = ['VOTO DE LEGENDA', p['sigla'], 'LEGENDA', '', '']
+            else:
+                # partido sem chapa válida para o cargo na UF: votos na legenda não são válidos
+                cand_names[nr] = ['VOTO DE LEGENDA', siglas.get(nr, f'PARTIDO {nr}'), 'LEGENDA ANULADA', '', '']
         else:
             # na urna, mas fora da votação nominal oficial (candidatura cancelada; o TSE anula
             # esses votos): nome da urna, partido pelo prefixo
@@ -194,13 +229,14 @@ def write_zip(tipo, uf, cand_names, results):
 
 
 def main():
-    if len(sys.argv) < 2:
+    if len(sys.argv) < 3:
         sys.exit(__doc__)
-    tse_dir = sys.argv[1]
-    only = [u.upper() for u in sys.argv[2:]] or ALL_UFS
+    tse_dir, obs_dir = sys.argv[1], sys.argv[2]
+    only = [u.upper() for u in sys.argv[3:]] or ALL_UFS
     os.makedirs(OUT_DIR, exist_ok=True)
     cand_zip = zipfile.ZipFile(os.path.join(tse_dir, f'votacao_candidato_munzona_{YEAR}.zip'))
     party_zip = zipfile.ZipFile(os.path.join(tse_dir, f'votacao_partido_munzona_{YEAR}.zip'))
+    national_siglas = load_national_siglas(party_zip)
 
     totals_path = os.path.join(OUT_DIR, f'official_totals_{YEAR}.json')
     official = {}
@@ -215,17 +251,19 @@ def main():
             print(f'{uf}: votacao_secao ausente, pulando')
             continue
         cands = load_candidates(cand_zip, uf)
-        parties = load_party_votes(party_zip, uf)
-        results, names = load_section_votes(secao, uf)
+        parties, siglas = load_party_votes(party_zip, uf)
+        siglas = {**national_siglas, **siglas}
+        results, names, fora = load_section_votes(secao, uf, load_section_map(obs_dir, uf))
         official[uf] = {}
         for tipo, key in (('federal', 'f'), ('estadual', 'e')):
-            cand_names = build_cand_names(cands[tipo], parties[tipo], results[tipo], names[tipo])
+            cand_names = build_cand_names(cands[tipo], parties[tipo], siglas, results[tipo], names[tipo])
             totals = write_zip(tipo, uf, cand_names, results[tipo])
             official[uf][key] = build_official(cands[tipo], parties[tipo])
             st = official[uf][key]['stats']
             print(f'{uf} {tipo}: {len(results[tipo])} locais, {len(cand_names)} votáveis, '
                   f'{st["qt_vagas"]} vagas, QE {st["vr_qe"]}, {st["qt_votos_validos"]} válidos, '
-                  f'{sum(totals.values())} votos nas seções', flush=True)
+                  f'{sum(totals.values())} votos nas seções'
+                  f'{f" ({fora} em seções fora do cadastro)" if fora else ""}', flush=True)
 
     official = {uf: official[uf] for uf in ALL_UFS if uf in official}
     with open(totals_path, 'w', encoding='utf-8') as fh:

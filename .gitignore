@@ -2,3 +2,8 @@
 resultados_geo/distritos_simulados.geojson
 
 node_modules/
+
+# Deputado estadual 2026: usados só para gerar os agregados (semilocal_votos.json) e fora do
+# site, como em 2022, para não passar do limite de tamanho do GitHub Pages. Regeneráveis com
+# scratch/gerar_legislativas_2026.py.
+resultados_geo/Legislativas 2026/deputados_estadual_2026_*.zip
