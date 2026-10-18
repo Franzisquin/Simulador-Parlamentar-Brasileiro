@@ -115810,5 +115810,113 @@
   "senador2022/senador_TO_2022.geojson": {
     "zip": "senador2022_5.zip",
     "file": "senador_TO_2022.geojson"
+  },
+  "locais_votacao_2026/locais_votacao_2026_AC.geojson": {
+    "zip": "locais_votacao_2026_1.zip",
+    "file": "locais_votacao_2026_AC.geojson"
+  },
+  "locais_votacao_2026/locais_votacao_2026_AL.geojson": {
+    "zip": "locais_votacao_2026_1.zip",
+    "file": "locais_votacao_2026_AL.geojson"
+  },
+  "locais_votacao_2026/locais_votacao_2026_AM.geojson": {
+    "zip": "locais_votacao_2026_1.zip",
+    "file": "locais_votacao_2026_AM.geojson"
+  },
+  "locais_votacao_2026/locais_votacao_2026_AP.geojson": {
+    "zip": "locais_votacao_2026_1.zip",
+    "file": "locais_votacao_2026_AP.geojson"
+  },
+  "locais_votacao_2026/locais_votacao_2026_BA.geojson": {
+    "zip": "locais_votacao_2026_1.zip",
+    "file": "locais_votacao_2026_BA.geojson"
+  },
+  "locais_votacao_2026/locais_votacao_2026_CE.geojson": {
+    "zip": "locais_votacao_2026_2.zip",
+    "file": "locais_votacao_2026_CE.geojson"
+  },
+  "locais_votacao_2026/locais_votacao_2026_DF.geojson": {
+    "zip": "locais_votacao_2026_2.zip",
+    "file": "locais_votacao_2026_DF.geojson"
+  },
+  "locais_votacao_2026/locais_votacao_2026_ES.geojson": {
+    "zip": "locais_votacao_2026_2.zip",
+    "file": "locais_votacao_2026_ES.geojson"
+  },
+  "locais_votacao_2026/locais_votacao_2026_GO.geojson": {
+    "zip": "locais_votacao_2026_2.zip",
+    "file": "locais_votacao_2026_GO.geojson"
+  },
+  "locais_votacao_2026/locais_votacao_2026_MA.geojson": {
+    "zip": "locais_votacao_2026_2.zip",
+    "file": "locais_votacao_2026_MA.geojson"
+  },
+  "locais_votacao_2026/locais_votacao_2026_MG.geojson": {
+    "zip": "locais_votacao_2026_3.zip",
+    "file": "locais_votacao_2026_MG.geojson"
+  },
+  "locais_votacao_2026/locais_votacao_2026_MS.geojson": {
+    "zip": "locais_votacao_2026_3.zip",
+    "file": "locais_votacao_2026_MS.geojson"
+  },
+  "locais_votacao_2026/locais_votacao_2026_MT.geojson": {
+    "zip": "locais_votacao_2026_3.zip",
+    "file": "locais_votacao_2026_MT.geojson"
+  },
+  "locais_votacao_2026/locais_votacao_2026_PA.geojson": {
+    "zip": "locais_votacao_2026_4.zip",
+    "file": "locais_votacao_2026_PA.geojson"
+  },
+  "locais_votacao_2026/locais_votacao_2026_PB.geojson": {
+    "zip": "locais_votacao_2026_4.zip",
+    "file": "locais_votacao_2026_PB.geojson"
+  },
+  "locais_votacao_2026/locais_votacao_2026_PE.geojson": {
+    "zip": "locais_votacao_2026_4.zip",
+    "file": "locais_votacao_2026_PE.geojson"
+  },
+  "locais_votacao_2026/locais_votacao_2026_PI.geojson": {
+    "zip": "locais_votacao_2026_4.zip",
+    "file": "locais_votacao_2026_PI.geojson"
+  },
+  "locais_votacao_2026/locais_votacao_2026_PR.geojson": {
+    "zip": "locais_votacao_2026_5.zip",
+    "file": "locais_votacao_2026_PR.geojson"
+  },
+  "locais_votacao_2026/locais_votacao_2026_RJ.geojson": {
+    "zip": "locais_votacao_2026_5.zip",
+    "file": "locais_votacao_2026_RJ.geojson"
+  },
+  "locais_votacao_2026/locais_votacao_2026_RN.geojson": {
+    "zip": "locais_votacao_2026_5.zip",
+    "file": "locais_votacao_2026_RN.geojson"
+  },
+  "locais_votacao_2026/locais_votacao_2026_RO.geojson": {
+    "zip": "locais_votacao_2026_5.zip",
+    "file": "locais_votacao_2026_RO.geojson"
+  },
+  "locais_votacao_2026/locais_votacao_2026_RR.geojson": {
+    "zip": "locais_votacao_2026_5.zip",
+    "file": "locais_votacao_2026_RR.geojson"
+  },
+  "locais_votacao_2026/locais_votacao_2026_RS.geojson": {
+    "zip": "locais_votacao_2026_6.zip",
+    "file": "locais_votacao_2026_RS.geojson"
+  },
+  "locais_votacao_2026/locais_votacao_2026_SC.geojson": {
+    "zip": "locais_votacao_2026_6.zip",
+    "file": "locais_votacao_2026_SC.geojson"
+  },
+  "locais_votacao_2026/locais_votacao_2026_SE.geojson": {
+    "zip": "locais_votacao_2026_6.zip",
+    "file": "locais_votacao_2026_SE.geojson"
+  },
+  "locais_votacao_2026/locais_votacao_2026_SP.geojson": {
+    "zip": "locais_votacao_2026_7.zip",
+    "file": "locais_votacao_2026_SP.geojson"
+  },
+  "locais_votacao_2026/locais_votacao_2026_TO.geojson": {
+    "zip": "locais_votacao_2026_7.zip",
+    "file": "locais_votacao_2026_TO.geojson"
   }
 }

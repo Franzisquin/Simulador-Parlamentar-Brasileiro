@@ -525,6 +525,11 @@ const PARTY_COLORS = {
   "PSDB_CIDADANIA": "#0097fd",
   "PSOL/REDE": "#e95dd2",
   "PSOL_REDE": "#e95dd2",
+  "UNIAO_PROGRESSISTA": "#2eccff",
+  "RENOVACAO_SOLIDARIA": "#007c3c",
+  "DEMOCRATA": "#384ba8",
+  "BRASIL_PRONTO_PRA_MAIS": "#ff3859",
+  "BRASIL_DOS_NOSSOS_SONHOS": "#36aeba",
   "BRASIL_ESPERANCA": "#ff3859",
   "BRASIL_PARA_TODOS": "#16a250",
   "PELO_BEM_BRASIL": "#304091",
@@ -561,6 +566,16 @@ const PARTY_NUMBERS = {
 
 function getPresCoalitionMap() {
   const year = currentYear;
+  if (year === 2026) {
+    return {
+      "FE_BRASIL": "BRASIL_PRONTO_PRA_MAIS",
+      "PSOL_REDE": "BRASIL_PRONTO_PRA_MAIS",
+      "PSB": "BRASIL_PRONTO_PRA_MAIS",
+      "PDT": "BRASIL_PRONTO_PRA_MAIS",
+      "AVANTE": "BRASIL_DOS_NOSSOS_SONHOS",
+      "AGIR": "BRASIL_DOS_NOSSOS_SONHOS"
+    };
+  }
   if (year === 2022) {
     return {
       "FE_BRASIL": "BRASIL_ESPERANCA",
@@ -1163,6 +1178,7 @@ let officialTotals = null;
 let deputyTotals = null;
 let presidentTotals = null;
 let governorTotals = null;
+let loadedTotalsYear = null; // ano dos totais acima (loadYearData)
 let currentVoteBase = 'deputado';
 let estadosGeoJSON = null;
 let regionsGeoJSON = null;
@@ -1357,6 +1373,16 @@ function getStandardFederationKey(name, ignoreFederation = false) {
   else if (clean === 'PFL' || clean === 'DEM') partyKey = (currentYear >= 2024) ? 'PRD' : 'DEM';
   else if (clean === 'PCDOB' || clean === 'PC_DO_B') partyKey = 'PCDOB';
 
+  // Federações novas de 2026: União Progressista (UNIÃO/PP) e Renovação Solidária (PRD/SD)
+  if (currentYear >= 2026 && !ignoreFederation) {
+    if (partyKey === 'UNIAO' || partyKey === 'PP' || clean.includes('UNIAOPROGRESSISTA')) {
+      return 'UNIAO_PROGRESSISTA';
+    }
+    if (partyKey === 'PRD' || partyKey === 'SOLIDARIEDADE' || clean.includes('RENOVACAOSOLIDARIA')) {
+      return 'RENOVACAO_SOLIDARIA';
+    }
+  }
+
   if (currentYear >= 2022 && !ignoreFederation) {
     if (partyKey === 'PT' || partyKey === 'PV' || partyKey === 'PCDOB' || clean.includes('FEBRASIL') || clean.includes('BRASILESPERANCA') || (clean.includes('PT') && clean.includes('PV') && (clean.includes('PCDOB') || clean.includes('PC')))) {
       return 'FE_BRASIL';
@@ -1382,6 +1408,11 @@ function getPartyNameByNumber(candId, year = currentYear) {
   }
   if (id === '25' && year >= 2024) {
     return 'PRD'; // número 25 (ex-PFL/DEM) passou ao PRD em 2024
+  }
+  if (year >= 2026) {
+    if (id === '14') return 'MISSÃO';    // ex-PTB, incorporado ao PRD
+    if (id === '33') return 'MOBILIZA';
+    if (id === '35') return 'DEMOCRATA'; // ex-PMB
   }
   return PARTY_NUMBERS[id] || null;
 }
@@ -1410,7 +1441,9 @@ function collectPartyVotesFromCandidateResults(resultsData, candNames, opts = {}
 
       let partyName = null;
       if (String(candId).length <= 2) {
-        partyName = getPartyNameByNumber(candId);
+        // Candidato majoritário traz o partido nos metadados; voto de legenda vem como "PARTIDO NN"
+        const meta = candNames[candId];
+        partyName = (meta && meta[1] && !/^PARTIDO \d+$/i.test(meta[1])) ? meta[1] : getPartyNameByNumber(candId);
       } else {
         const meta = candNames[candId];
         if (meta) {
@@ -1457,6 +1490,8 @@ function getPartyColor(partyName, ignoreFederation = false) {
     if (!ignoreFederation && key === 'FE_BRASIL') baseColor = PARTY_COLORS['PT'];
     else if (!ignoreFederation && key === 'PSDB_CIDADANIA') baseColor = PARTY_COLORS['PSDB'];
     else if (!ignoreFederation && key === 'PSOL_REDE') baseColor = PARTY_COLORS['PSOL'];
+    else if (!ignoreFederation && key === 'UNIAO_PROGRESSISTA') baseColor = PARTY_COLORS['UNIAO_PROGRESSISTA'];
+    else if (!ignoreFederation && key === 'RENOVACAO_SOLIDARIA') baseColor = PARTY_COLORS['RENOVACAO_SOLIDARIA'];
     else if (PARTY_COLORS[norm]) baseColor = PARTY_COLORS[norm];
     else if (PARTY_COLORS[key]) baseColor = PARTY_COLORS[key];
     else {
@@ -1483,6 +1518,8 @@ function getCleanGroupName(id, ignoreFederation = false) {
     if (norm === 'BRASIL_ESPERANCA') return 'Brasil da Esperança (FE Brasil / PSOL-REDE / PSB / SD / Avante / Agir / PROS)';
     if (norm === 'BRASIL_PARA_TODOS') return 'Brasil para Todos (MDB / PSDB-Cidadania / PODE)';
     if (norm === 'PELO_BEM_BRASIL') return 'Pelo Bem do Brasil (PL / Republicanos / PP)';
+    if (norm === 'BRASIL_PRONTO_PRA_MAIS') return 'Brasil Pronto pra Mais (FE Brasil / PSOL-REDE / PSB / PDT)';
+    if (norm === 'BRASIL_DOS_NOSSOS_SONHOS') return 'Brasil dos Nossos Sonhos (Avante / Agir)';
 
     if (norm === 'POR_UM_BRASIL_DECENTE') return 'Por um Brasil Decente (PSDB / PFL)';
     if (norm === 'FRENTE_DE_ESQUERDA') return 'Frente de Esquerda (PSOL / PCB / PSTU)';
@@ -1507,9 +1544,12 @@ function getCleanGroupName(id, ignoreFederation = false) {
     if (key === 'FE_BRASIL') return 'FE Brasil (PT/PCdoB/PV)';
     if (key === 'PSDB_CIDADANIA') return 'PSDB/Cidadania';
     if (key === 'PSOL_REDE') return 'PSOL/Rede';
+    if (key === 'UNIAO_PROGRESSISTA') return 'União Progressista (UNIÃO/PP)';
+    if (key === 'RENOVACAO_SOLIDARIA') return 'Renovação Solidária (PRD/SD)';
   }
 
   if (key === 'UNIAO') return 'UNIÃO';
+  if (key === 'MISSAO') return 'MISSÃO';
   if (key === 'PCDOB') return 'PC do B';
 
   if (key === 'MDB') {
@@ -4361,6 +4401,7 @@ function updateVoteBaseOptions() {
           <option value="estadual_2006">Deputado Estadual 2006</option>
         </optgroup>
         <optgroup label="Eleições para Governador">
+          <option value="governador_2026">Governador 2026 (1º Turno)</option>
           <option value="governador_2022">Governador 2022</option>
           <option value="governador_2018">Governador 2018</option>
           <option value="governador_2014">Governador 2014</option>
@@ -4373,11 +4414,9 @@ function updateVoteBaseOptions() {
       const year = yearMatch ? yearMatch[1] : '2022';
       const isExec = currentValue.startsWith('presidente');
       const targetVal = isExec ? `governador_${year}` : `estadual_${year}`;
-      if (selectVoteBase.querySelector(`option[value="${targetVal}"]`)) {
-        selectVoteBase.value = targetVal;
-      } else {
-        selectVoteBase.value = `estadual_${year}`;
-      }
+      // Nem todo ano tem os dois cargos (2026: só governador) — cai para o que existir
+      const fallbacks = [targetVal, `estadual_${year}`, `governador_${year}`, 'estadual_2022'];
+      selectVoteBase.value = fallbacks.find(v => selectVoteBase.querySelector(`option[value="${v}"]`));
     }
   } else if (level === 'municipal') {
     // Only rebuild if not already showing municipal options
@@ -4411,6 +4450,7 @@ function updateVoteBaseOptions() {
     if (selectVoteBase.querySelector('option[value="estadual_2022"]') || selectVoteBase.querySelector('option[value="vereador_2024"]')) {
       selectVoteBase.innerHTML = `
         <optgroup label="Eleições Presidenciais">
+          <option value="presidente_2026">Presidente 2026 (1º Turno)</option>
           <option value="presidente_2022">Presidente 2022 (1º Turno)</option>
           <option value="presidente_2018">Presidente 2018 (1º Turno)</option>
           <option value="presidente_2014">Presidente 2014 (1º Turno)</option>
@@ -4428,14 +4468,12 @@ function updateVoteBaseOptions() {
       // Map: governador/prefeito -> presidente, estadual/vereador -> deputado
       const yearMatch = currentValue.match(/(\d{4})/);
       let year = yearMatch ? parseInt(yearMatch[1]) : 2022;
-      if (![2006, 2010, 2014, 2018, 2022].includes(year)) year = 2022; // ciclos federais
+      if (![2006, 2010, 2014, 2018, 2022, 2026].includes(year)) year = 2022; // ciclos federais
       const isExec = currentValue.startsWith('governador') || currentValue.startsWith('prefeito');
       const targetVal = isExec ? `presidente_${year}` : `deputado_${year}`;
-      if (selectVoteBase.querySelector(`option[value="${targetVal}"]`)) {
-        selectVoteBase.value = targetVal;
-      } else {
-        selectVoteBase.value = `deputado_${year}`;
-      }
+      // Nem todo ano tem os dois cargos (2026: só presidente) — cai para o que existir
+      const fallbacks = [targetVal, `deputado_${year}`, `presidente_${year}`, 'deputado_2022'];
+      selectVoteBase.value = fallbacks.find(v => selectVoteBase.querySelector(`option[value="${v}"]`));
     }
   }
 }
@@ -10956,13 +10994,16 @@ async function loadYearData(year) {
   loader.classList.add('visible');
 
   try {
+    // Os totais de deputado podem não existir para o ano (2026: só presidente e governador)
     const [totals, presTotals, govTotals] = await Promise.all([
-      fetchGeoJSON(DATA_BASE_URL + `Legislativas ${year}/official_totals_${year}.json`),
+      fetchGeoJSON(DATA_BASE_URL + `Legislativas ${year}/official_totals_${year}.json`).catch(() => null),
       fetchGeoJSON(DATA_BASE_URL + `official_totals_${year}_presidente.json`),
       fetchGeoJSON(DATA_BASE_URL + `official_totals_${year}_governador.json`).catch(() => null)
     ]);
 
-    if (!totals) throw new Error(`Erro ao carregar os totais oficiais de ${year}.`);
+    if (!totals && (currentVoteBase === 'deputado' || currentVoteBase === 'estadual')) {
+      throw new Error(`Erro ao carregar os totais oficiais de ${year}.`);
+    }
     if (!presTotals) throw new Error(`Erro ao carregar os totais presidenciais de ${year}.`);
 
     // Clean up encoding glitches in presidential and governor totals
@@ -10994,6 +11035,7 @@ async function loadYearData(year) {
     deputyTotals = totals;
     presidentTotals = presTotals;
     governorTotals = govTotals;
+    loadedTotalsYear = year;
 
     if (currentVoteBase === 'presidente') {
       officialTotals = presidentTotals;
@@ -11037,6 +11079,8 @@ function updateUIForSelectedYear() {
         desc = "Simula como seria a eleição parlamentar se as coligações presidenciais fossem aplicadas nacionalmente (Mudança de Verdade, Brasil Soberano, O Povo Feliz de Novo, Para Unir o Brasil, etc.).";
       } else if (currentYear === 2022) {
         desc = "Simula como seria a eleição parlamentar se as coligações presidenciais fossem aplicadas nacionalmente (Brasil da Esperança, Brasil para Todos e Pelo Bem do Brasil).";
+      } else if (currentYear === 2026) {
+        desc = "Simula como seria a eleição parlamentar se as coligações presidenciais fossem aplicadas nacionalmente (Brasil Pronto pra Mais e Brasil dos Nossos Sonhos).";
       }
       helpEl.textContent = desc;
     }
@@ -11565,7 +11609,7 @@ async function initApp() {
     }
 
     // Election level selector (Nacional vs Estadual)
-    document.getElementById('selectElectionLevel').addEventListener('change', (e) => {
+    document.getElementById('selectElectionLevel').addEventListener('change', async (e) => {
       const level = e.target.value;
 
       selectedState = null;
@@ -11586,6 +11630,10 @@ async function initApp() {
         const [base, yearStr] = selectVoteBase.value.split('_');
         currentVoteBase = base;
         currentYear = parseInt(yearStr);
+        // A troca de nível pode mudar o ano (ex.: municipal 2024 -> nacional 2022)
+        if (level !== 'municipal' && loadedTotalsYear !== currentYear) {
+          await loadYearData(currentYear);
+        }
         if (currentVoteBase === 'presidente') {
           officialTotals = presidentTotals;
         } else if (currentVoteBase === 'governador') {
@@ -11668,7 +11716,7 @@ async function initApp() {
         return;
       }
 
-      const yearChanged = selectedYear !== currentYear;
+      const yearChanged = selectedYear !== currentYear || selectedYear !== loadedTotalsYear;
       const baseChanged = selectedBase !== currentVoteBase;
 
       currentVoteBase = selectedBase;

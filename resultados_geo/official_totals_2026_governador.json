@@ -1,0 +1,1200 @@
+{
+  "AC": {
+    "g": {
+      "stats": {
+        "qt_votos_validos": 439647
+      },
+      "coalitions": [
+        {
+          "id": "REPUBLICANOS",
+          "raw_comp": "REPUBLICANOS",
+          "votes": 141859
+        },
+        {
+          "id": "PP",
+          "raw_comp": "PP",
+          "votes": 218760
+        },
+        {
+          "id": "PCB",
+          "raw_comp": "PCB",
+          "votes": 715
+        },
+        {
+          "id": "AGIR",
+          "raw_comp": "AGIR",
+          "votes": 404
+        },
+        {
+          "id": "PSB",
+          "raw_comp": "PSB",
+          "votes": 32963
+        },
+        {
+          "id": "PSDB",
+          "raw_comp": "PSDB",
+          "votes": 44946
+        }
+      ]
+    }
+  },
+  "AL": {
+    "g": {
+      "stats": {
+        "qt_votos_validos": 1709614
+      },
+      "coalitions": [
+        {
+          "id": "MDB",
+          "raw_comp": "MDB",
+          "votes": 809796
+        },
+        {
+          "id": "DEMOCRATA",
+          "raw_comp": "DEMOCRATA",
+          "votes": 880
+        },
+        {
+          "id": "PSDB",
+          "raw_comp": "PSDB",
+          "votes": 892484
+        },
+        {
+          "id": "UP",
+          "raw_comp": "UP",
+          "votes": 6454
+        }
+      ]
+    }
+  },
+  "AM": {
+    "g": {
+      "stats": {
+        "qt_votos_validos": 2071985
+      },
+      "coalitions": [
+        {
+          "id": "PSTU",
+          "raw_comp": "PSTU",
+          "votes": 2783
+        },
+        {
+          "id": "REDE",
+          "raw_comp": "REDE",
+          "votes": 11459
+        },
+        {
+          "id": "PL",
+          "raw_comp": "PL",
+          "votes": 507335
+        },
+        {
+          "id": "MOBILIZA",
+          "raw_comp": "MOBILIZA",
+          "votes": 36176
+        },
+        {
+          "id": "UNIÃO",
+          "raw_comp": "UNIÃO",
+          "votes": 453896
+        },
+        {
+          "id": "PSD",
+          "raw_comp": "PSD",
+          "votes": 841846
+        },
+        {
+          "id": "AVANTE",
+          "raw_comp": "AVANTE",
+          "votes": 218490
+        }
+      ]
+    }
+  },
+  "AP": {
+    "g": {
+      "stats": {
+        "qt_votos_validos": 448747
+      },
+      "coalitions": [
+        {
+          "id": "PSTU",
+          "raw_comp": "PSTU",
+          "votes": 561
+        },
+        {
+          "id": "DC",
+          "raw_comp": "DC",
+          "votes": 376
+        },
+        {
+          "id": "PCO",
+          "raw_comp": "PCO",
+          "votes": 315
+        },
+        {
+          "id": "UNIÃO",
+          "raw_comp": "UNIÃO",
+          "votes": 165900
+        },
+        {
+          "id": "PSD",
+          "raw_comp": "PSD",
+          "votes": 281595
+        }
+      ]
+    }
+  },
+  "BA": {
+    "g": {
+      "stats": {
+        "qt_votos_validos": 8291090
+      },
+      "coalitions": [
+        {
+          "id": "PT",
+          "raw_comp": "PT",
+          "votes": 4626509
+        },
+        {
+          "id": "DC",
+          "raw_comp": "DC",
+          "votes": 2845
+        },
+        {
+          "id": "PCO",
+          "raw_comp": "PCO",
+          "votes": 4028
+        },
+        {
+          "id": "UNIÃO",
+          "raw_comp": "UNIÃO",
+          "votes": 3625227
+        },
+        {
+          "id": "PSOL",
+          "raw_comp": "PSOL",
+          "votes": 27243
+        },
+        {
+          "id": "UP",
+          "raw_comp": "UP",
+          "votes": 5238
+        }
+      ]
+    }
+  },
+  "CE": {
+    "g": {
+      "stats": {
+        "qt_votos_validos": 5406095
+      },
+      "coalitions": [
+        {
+          "id": "PT",
+          "raw_comp": "PT",
+          "votes": 2875573
+        },
+        {
+          "id": "MISSÃO",
+          "raw_comp": "MISSÃO",
+          "votes": 17219
+        },
+        {
+          "id": "PSTU",
+          "raw_comp": "PSTU",
+          "votes": 2161
+        },
+        {
+          "id": "PCO",
+          "raw_comp": "PCO",
+          "votes": 463
+        },
+        {
+          "id": "NOVO",
+          "raw_comp": "NOVO",
+          "votes": 5701
+        },
+        {
+          "id": "DEMOCRATA",
+          "raw_comp": "DEMOCRATA",
+          "votes": 1743
+        },
+        {
+          "id": "PSDB",
+          "raw_comp": "PSDB",
+          "votes": 2498891
+        },
+        {
+          "id": "UP",
+          "raw_comp": "UP",
+          "votes": 4344
+        }
+      ]
+    }
+  },
+  "DF": {
+    "g": {
+      "stats": {
+        "qt_votos_validos": 1661693
+      },
+      "coalitions": [
+        {
+          "id": "PP",
+          "raw_comp": "PP",
+          "votes": 825530
+        },
+        {
+          "id": "PT",
+          "raw_comp": "PT",
+          "votes": 569930
+        },
+        {
+          "id": "PSTU",
+          "raw_comp": "PSTU",
+          "votes": 1640
+        },
+        {
+          "id": "PRTB",
+          "raw_comp": "PRTB",
+          "votes": 671
+        },
+        {
+          "id": "PCO",
+          "raw_comp": "PCO",
+          "votes": 595
+        },
+        {
+          "id": "NOVO",
+          "raw_comp": "NOVO",
+          "votes": 72148
+        },
+        {
+          "id": "AGIR",
+          "raw_comp": "AGIR",
+          "votes": 1172
+        },
+        {
+          "id": "PSB",
+          "raw_comp": "PSB",
+          "votes": 36828
+        },
+        {
+          "id": "PSDB",
+          "raw_comp": "PSDB",
+          "votes": 140765
+        },
+        {
+          "id": "PSD",
+          "raw_comp": "PSD",
+          "votes": 8456
+        },
+        {
+          "id": "UP",
+          "raw_comp": "UP",
+          "votes": 3958
+        }
+      ]
+    }
+  },
+  "ES": {
+    "g": {
+      "stats": {
+        "qt_votos_validos": 2112171
+      },
+      "coalitions": [
+        {
+          "id": "REPUBLICANOS",
+          "raw_comp": "REPUBLICANOS",
+          "votes": 1048633
+        },
+        {
+          "id": "PT",
+          "raw_comp": "PT",
+          "votes": 323483
+        },
+        {
+          "id": "MISSÃO",
+          "raw_comp": "MISSÃO",
+          "votes": 17988
+        },
+        {
+          "id": "MDB",
+          "raw_comp": "MDB",
+          "votes": 719397
+        },
+        {
+          "id": "UP",
+          "raw_comp": "UP",
+          "votes": 2670
+        }
+      ]
+    }
+  },
+  "GO": {
+    "g": {
+      "stats": {
+        "qt_votos_validos": 3630576
+      },
+      "coalitions": [
+        {
+          "id": "PT",
+          "raw_comp": "PT",
+          "votes": 356692
+        },
+        {
+          "id": "MDB",
+          "raw_comp": "MDB",
+          "votes": 2148218
+        },
+        {
+          "id": "PL",
+          "raw_comp": "PL",
+          "votes": 797141
+        },
+        {
+          "id": "PCO",
+          "raw_comp": "PCO",
+          "votes": 1217
+        },
+        {
+          "id": "PSDB",
+          "raw_comp": "PSDB",
+          "votes": 315676
+        },
+        {
+          "id": "UP",
+          "raw_comp": "UP",
+          "votes": 11632
+        }
+      ]
+    }
+  },
+  "MA": {
+    "g": {
+      "stats": {
+        "qt_votos_validos": 3895080
+      },
+      "coalitions": [
+        {
+          "id": "PT",
+          "raw_comp": "PT",
+          "votes": 374039
+        },
+        {
+          "id": "MISSÃO",
+          "raw_comp": "MISSÃO",
+          "votes": 7905
+        },
+        {
+          "id": "MDB",
+          "raw_comp": "MDB",
+          "votes": 1354044
+        },
+        {
+          "id": "PSTU",
+          "raw_comp": "PSTU",
+          "votes": 4693
+        },
+        {
+          "id": "PCB",
+          "raw_comp": "PCB",
+          "votes": 1096
+        },
+        {
+          "id": "PRTB",
+          "raw_comp": "PRTB",
+          "votes": 48924
+        },
+        {
+          "id": "PCO",
+          "raw_comp": "PCO",
+          "votes": 257
+        },
+        {
+          "id": "PSD",
+          "raw_comp": "PSD",
+          "votes": 2104122
+        }
+      ]
+    }
+  },
+  "MG": {
+    "g": {
+      "stats": {
+        "qt_votos_validos": 11411835
+      },
+      "coalitions": [
+        {
+          "id": "REPUBLICANOS",
+          "raw_comp": "REPUBLICANOS",
+          "votes": 6321590
+        },
+        {
+          "id": "PDT",
+          "raw_comp": "PDT",
+          "votes": 403466
+        },
+        {
+          "id": "PT",
+          "raw_comp": "PT",
+          "votes": 3006088
+        },
+        {
+          "id": "MISSÃO",
+          "raw_comp": "MISSÃO",
+          "votes": 80308
+        },
+        {
+          "id": "MDB",
+          "raw_comp": "MDB",
+          "votes": 237051
+        },
+        {
+          "id": "PSTU",
+          "raw_comp": "PSTU",
+          "votes": 4764
+        },
+        {
+          "id": "PCB",
+          "raw_comp": "PCB",
+          "votes": 10957
+        },
+        {
+          "id": "PL",
+          "raw_comp": "PL",
+          "votes": 795193
+        },
+        {
+          "id": "PCO",
+          "raw_comp": "PCO",
+          "votes": 1464
+        },
+        {
+          "id": "PSD",
+          "raw_comp": "PSD",
+          "votes": 530292
+        },
+        {
+          "id": "UP",
+          "raw_comp": "UP",
+          "votes": 20662
+        }
+      ]
+    }
+  },
+  "MS": {
+    "g": {
+      "stats": {
+        "qt_votos_validos": 1363298
+      },
+      "coalitions": [
+        {
+          "id": "PP",
+          "raw_comp": "PP",
+          "votes": 914323
+        },
+        {
+          "id": "PT",
+          "raw_comp": "PT",
+          "votes": 322807
+        },
+        {
+          "id": "PRD",
+          "raw_comp": "PRD",
+          "votes": 14431
+        },
+        {
+          "id": "DC",
+          "raw_comp": "DC",
+          "votes": 5589
+        },
+        {
+          "id": "PCO",
+          "raw_comp": "PCO",
+          "votes": 2115
+        },
+        {
+          "id": "NOVO",
+          "raw_comp": "NOVO",
+          "votes": 98677
+        },
+        {
+          "id": "AGIR",
+          "raw_comp": "AGIR",
+          "votes": 912
+        },
+        {
+          "id": "PSOL",
+          "raw_comp": "PSOL",
+          "votes": 4444
+        }
+      ]
+    }
+  },
+  "MT": {
+    "g": {
+      "stats": {
+        "qt_votos_validos": 1856293
+      },
+      "coalitions": [
+        {
+          "id": "REPUBLICANOS",
+          "raw_comp": "REPUBLICANOS",
+          "votes": 1128099
+        },
+        {
+          "id": "MISSÃO",
+          "raw_comp": "MISSÃO",
+          "votes": 10300
+        },
+        {
+          "id": "PL",
+          "raw_comp": "PL",
+          "votes": 430442
+        },
+        {
+          "id": "MOBILIZA",
+          "raw_comp": "MOBILIZA",
+          "votes": 2694
+        },
+        {
+          "id": "AGIR",
+          "raw_comp": "AGIR",
+          "votes": 3210
+        },
+        {
+          "id": "PSD",
+          "raw_comp": "PSD",
+          "votes": 281548
+        }
+      ]
+    }
+  },
+  "PA": {
+    "g": {
+      "stats": {
+        "qt_votos_validos": 4566828
+      },
+      "coalitions": [
+        {
+          "id": "MDB",
+          "raw_comp": "MDB",
+          "votes": 2125084
+        },
+        {
+          "id": "PSTU",
+          "raw_comp": "PSTU",
+          "votes": 2676
+        },
+        {
+          "id": "PODE",
+          "raw_comp": "PODE",
+          "votes": 2345721
+        },
+        {
+          "id": "DEMOCRATA",
+          "raw_comp": "DEMOCRATA",
+          "votes": 1987
+        },
+        {
+          "id": "PSOL",
+          "raw_comp": "PSOL",
+          "votes": 85857
+        },
+        {
+          "id": "UP",
+          "raw_comp": "UP",
+          "votes": 5503
+        }
+      ]
+    }
+  },
+  "PB": {
+    "g": {
+      "stats": {
+        "qt_votos_validos": 2287212
+      },
+      "coalitions": [
+        {
+          "id": "PP",
+          "raw_comp": "PP",
+          "votes": 1470252
+        },
+        {
+          "id": "MDB",
+          "raw_comp": "MDB",
+          "votes": 252884
+        },
+        {
+          "id": "PL",
+          "raw_comp": "PL",
+          "votes": 552836
+        },
+        {
+          "id": "DC",
+          "raw_comp": "DC",
+          "votes": 590
+        },
+        {
+          "id": "PCO",
+          "raw_comp": "PCO",
+          "votes": 2378
+        },
+        {
+          "id": "UP",
+          "raw_comp": "UP",
+          "votes": 8272
+        }
+      ]
+    }
+  },
+  "PE": {
+    "g": {
+      "stats": {
+        "qt_votos_validos": 5266852
+      },
+      "coalitions": [
+        {
+          "id": "MISSÃO",
+          "raw_comp": "MISSÃO",
+          "votes": 18340
+        },
+        {
+          "id": "PSTU",
+          "raw_comp": "PSTU",
+          "votes": 987
+        },
+        {
+          "id": "PCO",
+          "raw_comp": "PCO",
+          "votes": 424
+        },
+        {
+          "id": "PSB",
+          "raw_comp": "PSB",
+          "votes": 2360469
+        },
+        {
+          "id": "PSOL",
+          "raw_comp": "PSOL",
+          "votes": 77699
+        },
+        {
+          "id": "PSD",
+          "raw_comp": "PSD",
+          "votes": 2805438
+        },
+        {
+          "id": "UP",
+          "raw_comp": "UP",
+          "votes": 3495
+        }
+      ]
+    }
+  },
+  "PI": {
+    "g": {
+      "stats": {
+        "qt_votos_validos": 2026275
+      },
+      "coalitions": [
+        {
+          "id": "PP",
+          "raw_comp": "PP",
+          "votes": 557972
+        },
+        {
+          "id": "PT",
+          "raw_comp": "PT",
+          "votes": 1436697
+        },
+        {
+          "id": "PSTU",
+          "raw_comp": "PSTU",
+          "votes": 1858
+        },
+        {
+          "id": "DC",
+          "raw_comp": "DC",
+          "votes": 1102
+        },
+        {
+          "id": "PCO",
+          "raw_comp": "PCO",
+          "votes": 1296
+        },
+        {
+          "id": "NOVO",
+          "raw_comp": "NOVO",
+          "votes": 5141
+        },
+        {
+          "id": "DEMOCRATA",
+          "raw_comp": "DEMOCRATA",
+          "votes": 819
+        },
+        {
+          "id": "PSDB",
+          "raw_comp": "PSDB",
+          "votes": 9611
+        },
+        {
+          "id": "PSOL",
+          "raw_comp": "PSOL",
+          "votes": 10002
+        },
+        {
+          "id": "UP",
+          "raw_comp": "UP",
+          "votes": 1777
+        }
+      ]
+    }
+  },
+  "PR": {
+    "g": {
+      "stats": {
+        "qt_votos_validos": 6243799
+      },
+      "coalitions": [
+        {
+          "id": "PDT",
+          "raw_comp": "PDT",
+          "votes": 1465601
+        },
+        {
+          "id": "MISSÃO",
+          "raw_comp": "MISSÃO",
+          "votes": 44581
+        },
+        {
+          "id": "PSTU",
+          "raw_comp": "PSTU",
+          "votes": 2080
+        },
+        {
+          "id": "PL",
+          "raw_comp": "PL",
+          "votes": 3127911
+        },
+        {
+          "id": "PCO",
+          "raw_comp": "PCO",
+          "votes": 1525
+        },
+        {
+          "id": "MOBILIZA",
+          "raw_comp": "MOBILIZA",
+          "votes": 4144
+        },
+        {
+          "id": "PSD",
+          "raw_comp": "PSD",
+          "votes": 1583764
+        },
+        {
+          "id": "UP",
+          "raw_comp": "UP",
+          "votes": 14193
+        }
+      ]
+    }
+  },
+  "RJ": {
+    "g": {
+      "stats": {
+        "qt_votos_validos": 8669038
+      },
+      "coalitions": [
+        {
+          "id": "REPUBLICANOS",
+          "raw_comp": "REPUBLICANOS",
+          "votes": 274411
+        },
+        {
+          "id": "MISSÃO",
+          "raw_comp": "MISSÃO",
+          "votes": 84889
+        },
+        {
+          "id": "PSTU",
+          "raw_comp": "PSTU",
+          "votes": 14642
+        },
+        {
+          "id": "PL",
+          "raw_comp": "PL",
+          "votes": 4271199
+        },
+        {
+          "id": "PCO",
+          "raw_comp": "PCO",
+          "votes": 2777
+        },
+        {
+          "id": "NOVO",
+          "raw_comp": "NOVO",
+          "votes": 45359
+        },
+        {
+          "id": "PSOL",
+          "raw_comp": "PSOL",
+          "votes": 235347
+        },
+        {
+          "id": "PSD",
+          "raw_comp": "PSD",
+          "votes": 3706984
+        },
+        {
+          "id": "UP",
+          "raw_comp": "UP",
+          "votes": 33430
+        }
+      ]
+    }
+  },
+  "RN": {
+    "g": {
+      "stats": {
+        "qt_votos_validos": 1988819
+      },
+      "coalitions": [
+        {
+          "id": "PT",
+          "raw_comp": "PT",
+          "votes": 718300
+        },
+        {
+          "id": "PSTU",
+          "raw_comp": "PSTU",
+          "votes": 1388
+        },
+        {
+          "id": "PL",
+          "raw_comp": "PL",
+          "votes": 530580
+        },
+        {
+          "id": "DC",
+          "raw_comp": "DC",
+          "votes": 464
+        },
+        {
+          "id": "PCO",
+          "raw_comp": "PCO",
+          "votes": 227
+        },
+        {
+          "id": "AGIR",
+          "raw_comp": "AGIR",
+          "votes": 434
+        },
+        {
+          "id": "UNIÃO",
+          "raw_comp": "UNIÃO",
+          "votes": 733809
+        },
+        {
+          "id": "PSOL",
+          "raw_comp": "PSOL",
+          "votes": 2151
+        },
+        {
+          "id": "UP",
+          "raw_comp": "UP",
+          "votes": 1466
+        }
+      ]
+    }
+  },
+  "RO": {
+    "g": {
+      "stats": {
+        "qt_votos_validos": 945058
+      },
+      "coalitions": [
+        {
+          "id": "PT",
+          "raw_comp": "PT",
+          "votes": 72851
+        },
+        {
+          "id": "MDB",
+          "raw_comp": "MDB",
+          "votes": 6591
+        },
+        {
+          "id": "PL",
+          "raw_comp": "PL",
+          "votes": 537370
+        },
+        {
+          "id": "PSB",
+          "raw_comp": "PSB",
+          "votes": 4344
+        },
+        {
+          "id": "UNIÃO",
+          "raw_comp": "UNIÃO",
+          "votes": 134355
+        },
+        {
+          "id": "PSD",
+          "raw_comp": "PSD",
+          "votes": 189547
+        }
+      ]
+    }
+  },
+  "RR": {
+    "g": {
+      "stats": {
+        "qt_votos_validos": 319413
+      },
+      "coalitions": [
+        {
+          "id": "REPUBLICANOS",
+          "raw_comp": "REPUBLICANOS",
+          "votes": 93434
+        },
+        {
+          "id": "PL",
+          "raw_comp": "PL",
+          "votes": 220809
+        },
+        {
+          "id": "PCO",
+          "raw_comp": "PCO",
+          "votes": 77
+        },
+        {
+          "id": "PSOL",
+          "raw_comp": "PSOL",
+          "votes": 4880
+        },
+        {
+          "id": "SOLIDARIEDADE",
+          "raw_comp": "SOLIDARIEDADE",
+          "votes": 213
+        }
+      ]
+    }
+  },
+  "RS": {
+    "g": {
+      "stats": {
+        "qt_votos_validos": 6057443
+      },
+      "coalitions": [
+        {
+          "id": "PDT",
+          "raw_comp": "PDT",
+          "votes": 1917374
+        },
+        {
+          "id": "MDB",
+          "raw_comp": "MDB",
+          "votes": 510698
+        },
+        {
+          "id": "PSTU",
+          "raw_comp": "PSTU",
+          "votes": 3492
+        },
+        {
+          "id": "PL",
+          "raw_comp": "PL",
+          "votes": 3516048
+        },
+        {
+          "id": "PCO",
+          "raw_comp": "PCO",
+          "votes": 2137
+        },
+        {
+          "id": "PSDB",
+          "raw_comp": "PSDB",
+          "votes": 101978
+        },
+        {
+          "id": "UP",
+          "raw_comp": "UP",
+          "votes": 5716
+        }
+      ]
+    }
+  },
+  "SC": {
+    "g": {
+      "stats": {
+        "qt_votos_validos": 4265641
+      },
+      "coalitions": [
+        {
+          "id": "MISSÃO",
+          "raw_comp": "MISSÃO",
+          "votes": 46624
+        },
+        {
+          "id": "PSTU",
+          "raw_comp": "PSTU",
+          "votes": 6682
+        },
+        {
+          "id": "PL",
+          "raw_comp": "PL",
+          "votes": 2942386
+        },
+        {
+          "id": "PRD",
+          "raw_comp": "PRD",
+          "votes": 9000
+        },
+        {
+          "id": "PCO",
+          "raw_comp": "PCO",
+          "votes": 2413
+        },
+        {
+          "id": "PSB",
+          "raw_comp": "PSB",
+          "votes": 668021
+        },
+        {
+          "id": "PSD",
+          "raw_comp": "PSD",
+          "votes": 569263
+        },
+        {
+          "id": "UP",
+          "raw_comp": "UP",
+          "votes": 21252
+        }
+      ]
+    }
+  },
+  "SE": {
+    "g": {
+      "stats": {
+        "qt_votos_validos": 1260203
+      },
+      "coalitions": [
+        {
+          "id": "REPUBLICANOS",
+          "raw_comp": "REPUBLICANOS",
+          "votes": 459908
+        },
+        {
+          "id": "PL",
+          "raw_comp": "PL",
+          "votes": 31852
+        },
+        {
+          "id": "DC",
+          "raw_comp": "DC",
+          "votes": 2728
+        },
+        {
+          "id": "PSDB",
+          "raw_comp": "PSDB",
+          "votes": 1343
+        },
+        {
+          "id": "PSOL",
+          "raw_comp": "PSOL",
+          "votes": 37081
+        },
+        {
+          "id": "PSD",
+          "raw_comp": "PSD",
+          "votes": 727291
+        }
+      ]
+    }
+  },
+  "SP": {
+    "g": {
+      "stats": {
+        "qt_votos_validos": 23152883
+      },
+      "coalitions": [
+        {
+          "id": "REPUBLICANOS",
+          "raw_comp": "REPUBLICANOS",
+          "votes": 14491874
+        },
+        {
+          "id": "PT",
+          "raw_comp": "PT",
+          "votes": 8423656
+        },
+        {
+          "id": "PSTU",
+          "raw_comp": "PSTU",
+          "votes": 75641
+        },
+        {
+          "id": "PCB",
+          "raw_comp": "PCB",
+          "votes": 58862
+        },
+        {
+          "id": "PCO",
+          "raw_comp": "PCO",
+          "votes": 22370
+        },
+        {
+          "id": "UP",
+          "raw_comp": "UP",
+          "votes": 80480
+        }
+      ]
+    }
+  },
+  "TO": {
+    "g": {
+      "stats": {
+        "qt_votos_validos": 849656
+      },
+      "coalitions": [
+        {
+          "id": "DC",
+          "raw_comp": "DC",
+          "votes": 1272
+        },
+        {
+          "id": "NOVO",
+          "raw_comp": "NOVO",
+          "votes": 13173
+        },
+        {
+          "id": "DEMOCRATA",
+          "raw_comp": "DEMOCRATA",
+          "votes": 1027
+        },
+        {
+          "id": "UNIÃO",
+          "raw_comp": "UNIÃO",
+          "votes": 386260
+        },
+        {
+          "id": "PSDB",
+          "raw_comp": "PSDB",
+          "votes": 372848
+        },
+        {
+          "id": "PSOL",
+          "raw_comp": "PSOL",
+          "votes": 5109
+        },
+        {
+          "id": "PSD",
+          "raw_comp": "PSD",
+          "votes": 69967
+        }
+      ]
+    }
+  }
+}
