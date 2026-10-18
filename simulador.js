@@ -4406,6 +4406,7 @@ function updateVoteBaseOptions() {
     if (!selectVoteBase.querySelector('option[value="estadual_2022"]')) {
       selectVoteBase.innerHTML = `
         <optgroup label="Eleições para Deputado Estadual">
+          <option value="estadual_2026">Deputado Estadual 2026</option>
           <option value="estadual_2022">Deputado Estadual 2022</option>
           <option value="estadual_2018">Deputado Estadual 2018</option>
           <option value="estadual_2014">Deputado Estadual 2014</option>
@@ -4426,7 +4427,7 @@ function updateVoteBaseOptions() {
       const year = yearMatch ? yearMatch[1] : '2022';
       const isExec = currentValue.startsWith('presidente');
       const targetVal = isExec ? `governador_${year}` : `estadual_${year}`;
-      // Nem todo ano tem os dois cargos (2026: só governador) — cai para o que existir
+      // Se o ano não tiver o cargo correspondente, cai para o que existir
       const fallbacks = [targetVal, `estadual_${year}`, `governador_${year}`, 'estadual_2022'];
       selectVoteBase.value = fallbacks.find(v => selectVoteBase.querySelector(`option[value="${v}"]`));
     }
@@ -4470,6 +4471,7 @@ function updateVoteBaseOptions() {
           <option value="presidente_2006">Presidente 2006 (1º Turno)</option>
         </optgroup>
         <optgroup label="Eleições para Deputado Federal">
+          <option value="deputado_2026">Deputado Federal 2026</option>
           <option value="deputado_2022" selected>Deputado Federal 2022</option>
           <option value="deputado_2018">Deputado Federal 2018</option>
           <option value="deputado_2014">Deputado Federal 2014</option>
@@ -4483,7 +4485,7 @@ function updateVoteBaseOptions() {
       if (![2006, 2010, 2014, 2018, 2022, 2026].includes(year)) year = 2022; // ciclos federais
       const isExec = currentValue.startsWith('governador') || currentValue.startsWith('prefeito');
       const targetVal = isExec ? `presidente_${year}` : `deputado_${year}`;
-      // Nem todo ano tem os dois cargos (2026: só presidente) — cai para o que existir
+      // Se o ano não tiver o cargo correspondente, cai para o que existir
       const fallbacks = [targetVal, `deputado_${year}`, `presidente_${year}`, 'deputado_2022'];
       selectVoteBase.value = fallbacks.find(v => selectVoteBase.querySelector(`option[value="${v}"]`));
     }
@@ -11006,7 +11008,7 @@ async function loadYearData(year) {
   loader.classList.add('visible');
 
   try {
-    // Os totais de deputado podem não existir para o ano (2026: só presidente e governador)
+    // Os totais de deputado são opcionais: um ano pode ter só os cargos majoritários
     const [totals, presTotals, govTotals] = await Promise.all([
       fetchGeoJSON(DATA_BASE_URL + `Legislativas ${year}/official_totals_${year}.json`).catch(() => null),
       fetchGeoJSON(DATA_BASE_URL + `official_totals_${year}_presidente.json`),
