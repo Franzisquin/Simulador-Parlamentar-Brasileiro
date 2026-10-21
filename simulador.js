@@ -497,7 +497,7 @@ const PARTY_COLORS = {
   "UP": "#5e5e5e",
   "PCO": "#8e3d10",
   "PSTU": "#620411",
-  "PRTB": "#1a7e2f",
+  "PRTB": "#2b59c3",
   "PMB": "#384ba8",
   "DEM": "#6dbf36",
   "PFL": "#6dbf36",
