@@ -1972,3 +1972,222 @@ body.mode-misto .results-body .section-title-row {
   }
 }
 
+
+/* ===== Cor do partido personalizada (seletor igual ao do ElectoMaps) ===== */
+.party-color-btn {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -4px;
+  width: 10px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.party-color-btn::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 4px;
+  transition: background 0.15s;
+}
+
+.party-color-btn:hover::after {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.party-color-popover {
+  position: absolute;
+  z-index: 10000;
+  filter: drop-shadow(0 10px 15px rgba(0, 0, 0, 0.2));
+  animation: party-color-appear 0.2s cubic-bezier(0, 0, 0.2, 1);
+}
+
+@keyframes party-color-appear {
+  from { opacity: 0; transform: scale(0.95) translateY(5px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.party-color-popover.hidden {
+  display: none !important;
+}
+
+.party-color-card {
+  background: var(--card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px;
+  width: 260px;
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.party-color-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.party-color-kicker {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.party-color-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.party-color-close {
+  background: transparent;
+  border: none;
+  font-size: 1.25rem;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  transition: color 0.15s;
+}
+
+.party-color-close:hover {
+  color: var(--text);
+}
+
+.party-color-preview-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.party-color-preview {
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  border: 2px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.party-color-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.party-color-meta span {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.party-color-meta strong {
+  font-size: 0.85rem;
+  font-family: monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.party-color-presets {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+}
+
+.party-color-chip {
+  background: none;
+  border: 1px solid transparent;
+  padding: 2px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.15s;
+}
+
+.party-color-chip:hover,
+.party-color-chip.active {
+  border-color: var(--accent);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.party-color-chip span {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 2px;
+}
+
+.party-color-advanced {
+  position: relative;
+}
+
+.party-color-picker-btn,
+.party-color-reset {
+  width: 100%;
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-sec);
+  padding: 8px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.party-color-reset {
+  font-weight: 600;
+}
+
+.party-color-picker-btn:hover,
+.party-color-reset:hover {
+  border-color: var(--muted);
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+#partyColorNativeInput {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.party-color-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.party-color-field span {
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.party-color-field input {
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text);
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-family: monospace;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+}
+
+.party-color-field input:focus {
+  outline: none;
+  border-color: var(--accent);
+}

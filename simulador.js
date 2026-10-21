@@ -1491,7 +1491,220 @@ function getNYTBaseColor(hex) {
   return hslToHex(hsl.h, s, l);
 }
 
+// ======= COR DO PARTIDO PERSONALIZADA (temporária, como no ElectoMaps) =======
+// Clicar na barra de cor de um partido nas tabelas abre um seletor; a cor escolhida
+// vale para mapa, hemiciclo e tabelas até recarregar a página (não é salva).
+
+const CUSTOM_PARTY_COLORS = new Map(); // chave padronizada do partido/federação -> '#RRGGBB'
+
+const PARTY_COLOR_PRESETS = [
+  '#1d4ed8', '#0f766e', '#16a34a', '#ca8a04', '#ea580c', '#dc2626',
+  '#be123c', '#7c3aed', '#4338ca', '#334155', '#111827', '#a16207'
+];
+
+let activePartyColorTarget = null;
+
+function getPartyColorKey(partyName, ignoreFederation = false) {
+  return getStandardFederationKey(partyName, ignoreFederation);
+}
+
+function escapePartyAttr(value) {
+  return String(value || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function partyColorHandle(party) {
+  if (!party) return '';
+  return `<button type="button" class="party-color-btn" data-party="${escapePartyAttr(party)}" title="Personalizar cor do partido" aria-label="Personalizar cor do partido"></button>`;
+}
+
+function normalizePartyHexColor(value) {
+  const raw = String(value || '').trim().toUpperCase();
+  if (!raw) return '';
+  const withHash = raw.startsWith('#') ? raw : `#${raw}`;
+  return /^#[0-9A-F]{6}$/.test(withHash) ? withHash : '';
+}
+
+function ensurePartyColorPopover() {
+  let popover = document.getElementById('partyColorPopover');
+  if (popover) return popover;
+
+  popover = document.createElement('div');
+  popover.id = 'partyColorPopover';
+  popover.className = 'party-color-popover hidden';
+  popover.innerHTML = `
+    <div class="party-color-card">
+      <div class="party-color-head">
+        <div>
+          <div class="party-color-kicker">Cor do Partido</div>
+          <div class="party-color-name" id="partyColorPopoverName">Partido</div>
+        </div>
+        <button type="button" class="party-color-close" data-color-action="close" aria-label="Fechar">×</button>
+      </div>
+      <div class="party-color-preview-row">
+        <span class="party-color-preview" id="partyColorPreview"></span>
+        <div class="party-color-meta">
+          <span>Cor atual</span>
+          <strong id="partyColorPopoverValue">#000000</strong>
+        </div>
+      </div>
+      <div class="party-color-presets">
+        ${PARTY_COLOR_PRESETS.map(color => `
+          <button type="button" class="party-color-chip" data-color="${color}" aria-label="Escolher cor ${color}">
+            <span style="background:${color}"></span>
+          </button>`).join('')}
+      </div>
+      <div class="party-color-advanced">
+        <button type="button" class="party-color-picker-btn" data-color-action="open-native-picker">Escolher qualquer cor</button>
+        <input id="partyColorNativeInput" type="color" value="#2563EB" tabindex="-1" aria-hidden="true" />
+      </div>
+      <label class="party-color-field">
+        <span>Cor do partido</span>
+        <input id="partyColorHexInput" type="text" maxlength="7" placeholder="#2563EB" />
+      </label>
+      <button type="button" class="party-color-reset" data-color-action="reset">Cor padrão</button>
+    </div>
+  `;
+  document.body.appendChild(popover);
+
+  const hexInput = popover.querySelector('#partyColorHexInput');
+  const nativeInput = popover.querySelector('#partyColorNativeInput');
+  hexInput.addEventListener('input', () => {
+    const value = normalizePartyHexColor(hexInput.value);
+    updatePartyColorPreview(value || hexInput.value);
+    if (value) applyPartyColor(value, false);
+  });
+  hexInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const value = normalizePartyHexColor(hexInput.value);
+      if (value) applyPartyColor(value, true);
+    } else if (e.key === 'Escape') {
+      closePartyColorPopover();
+    }
+  });
+  nativeInput.addEventListener('input', () => {
+    setPartyColorPopoverValue(nativeInput.value.toUpperCase());
+    applyPartyColor(nativeInput.value.toUpperCase(), false);
+  });
+  nativeInput.addEventListener('change', () => {
+    setPartyColorPopoverValue(nativeInput.value.toUpperCase());
+    applyPartyColor(nativeInput.value.toUpperCase(), true);
+  });
+  return popover;
+}
+
+function updatePartyColorPreview(colorValue) {
+  const popover = ensurePartyColorPopover();
+  const normalized = normalizePartyHexColor(colorValue);
+  const preview = popover.querySelector('#partyColorPreview');
+  preview.style.background = normalized || 'transparent';
+  preview.style.borderColor = normalized || 'var(--border-color)';
+  popover.querySelector('#partyColorPopoverValue').textContent = normalized || 'Inválida';
+  popover.querySelectorAll('.party-color-chip').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.color === normalized);
+  });
+}
+
+function setPartyColorPopoverValue(color) {
+  const popover = ensurePartyColorPopover();
+  popover.querySelector('#partyColorHexInput').value = color;
+  if (normalizePartyHexColor(color)) popover.querySelector('#partyColorNativeInput').value = color;
+  updatePartyColorPreview(color);
+}
+
+function rgbToHex(color) {
+  const m = String(color || '').match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+  if (!m) return normalizePartyHexColor(color) || '#777777';
+  return '#' + [m[1], m[2], m[3]].map(n => Number(n).toString(16).padStart(2, '0')).join('').toUpperCase();
+}
+
+function openPartyColorPopover(triggerEl, party) {
+  const popover = ensurePartyColorPopover();
+  activePartyColorTarget = party;
+  popover.querySelector('#partyColorPopoverName').textContent = getCleanGroupName(party);
+  setPartyColorPopoverValue(rgbToHex(getPartyColor(party)));
+  popover.classList.remove('hidden');
+
+  const rect = triggerEl.getBoundingClientRect();
+  const popRect = popover.getBoundingClientRect();
+  const top = Math.min(window.innerHeight - popRect.height - 12, rect.bottom + 10);
+  const left = Math.min(window.innerWidth - popRect.width - 12, Math.max(12, rect.left));
+  popover.style.top = `${Math.max(12, top) + window.scrollY}px`;
+  popover.style.left = `${left + window.scrollX}px`;
+}
+
+function closePartyColorPopover() {
+  const popover = document.getElementById('partyColorPopover');
+  if (popover) popover.classList.add('hidden');
+  activePartyColorTarget = null;
+}
+
+// Redesenha a visão atual (mapa, hemiciclo e tabelas) sem refazer a simulação
+function refreshViewForPartyColors() {
+  if (currentSystemType === 'distrital') {
+    renderDistrictMapNational();
+    renderDistrictResultsList();
+  } else if (currentSystemType === 'misto') {
+    renderMistoMap();
+    renderMistoResultsList();
+  } else {
+    renderResultsList();
+    renderMap();
+  }
+}
+
+function applyPartyColor(color, shouldClose = true) {
+  if (!activePartyColorTarget || !normalizePartyHexColor(color)) return;
+  const party = activePartyColorTarget;
+  CUSTOM_PARTY_COLORS.set(getPartyColorKey(party), normalizePartyHexColor(color));
+  refreshViewForPartyColors();
+  if (shouldClose) closePartyColorPopover();
+  else activePartyColorTarget = party;
+}
+
+function resetPartyColor() {
+  if (!activePartyColorTarget) return;
+  CUSTOM_PARTY_COLORS.delete(getPartyColorKey(activePartyColorTarget));
+  refreshViewForPartyColors();
+  closePartyColorPopover();
+}
+
+// Captura: o clique na barra não deve acionar o clique da linha/cartão (drill-down)
+document.addEventListener('click', (e) => {
+  const trigger = e.target.closest && e.target.closest('.party-color-btn');
+  if (trigger) {
+    e.preventDefault();
+    e.stopPropagation();
+    openPartyColorPopover(trigger, trigger.dataset.party);
+    return;
+  }
+
+  const popover = document.getElementById('partyColorPopover');
+  if (!popover || popover.classList.contains('hidden')) return;
+
+  if (popover.contains(e.target)) {
+    const preset = e.target.closest('.party-color-chip');
+    if (preset && preset.dataset.color) {
+      setPartyColorPopoverValue(preset.dataset.color);
+      applyPartyColor(preset.dataset.color, true);
+      return;
+    }
+    const actionEl = e.target.closest('[data-color-action]');
+    if (!actionEl) return;
+    const action = actionEl.dataset.colorAction;
+    if (action === 'close') closePartyColorPopover();
+    else if (action === 'reset') resetPartyColor();
+    else if (action === 'open-native-picker') popover.querySelector('#partyColorNativeInput').click();
+    return;
+  }
+
+  closePartyColorPopover();
+}, true);
+
 function getPartyColor(partyName, ignoreFederation = false) {
+  const custom = CUSTOM_PARTY_COLORS.get(getPartyColorKey(partyName, ignoreFederation));
+  if (custom) return custom;
+
   const norm = String(partyName || '').toUpperCase().trim();
   let baseColor = '#777777';
 
@@ -2863,7 +3076,7 @@ function renderMistoResultsList() {
       const isW = p.party === winner;
       rows += `
         <tr style="border-bottom:1px solid var(--border-color);${p.seats === 0 ? 'opacity:0.55;' : ''}">
-          <td style="text-align:left;padding:8px 6px;border-left:4px solid ${p.color};">
+          <td style="text-align:left;padding:8px 6px;border-left:4px solid ${p.color};position:relative;">${partyColorHandle(p.party)}
             <span style="font-weight:${isW ? '700' : '500'};margin-left:4px;font-size:13px;">${p.cleanName}</span>
             ${isW ? '<span style="font-size:10px;margin-left:6px;">✔</span>' : ''}
           </td>
@@ -3427,7 +3640,7 @@ function renderDistrictResultsList() {
 
       rowsHtml += `
         <tr style="border-bottom: 1px solid var(--border-color); transition: background 0.15s ease; ${p.seats === 0 ? 'opacity: 0.55;' : ''}">
-          <td style="text-align: left; padding: 8px 6px; border-left: 4px solid ${p.color};">
+          <td style="text-align: left; padding: 8px 6px; border-left: 4px solid ${p.color}; position: relative;">${partyColorHandle(p.party)}
             <span style="font-weight: ${isWinner ? '700' : '500'}; margin-left: 4px; font-size: 13px;">${p.cleanName}</span>${checkmark}
           </td>
           <td style="padding: 8px 6px; text-align: right; font-weight: 700; font-size: 13px; color: var(--text);">${p.seats}</td>
@@ -3521,7 +3734,7 @@ function renderDistrictResultsList() {
 
       summaryRowsHtml += `
         <tr style="border-bottom: 1px solid var(--border-color); ${p.seats === 0 ? 'opacity: 0.55;' : ''}">
-          <td style="text-align: left; padding: 6px 8px; border-left: 4px solid ${p.color};">
+          <td style="text-align: left; padding: 6px 8px; border-left: 4px solid ${p.color}; position: relative;">${partyColorHandle(p.party)}
             <span style="font-weight: ${isWinner ? '700' : '500'}; margin-left: 4px; font-size: 13px;">${p.cleanName}</span>${checkmark}
           </td>
           <td style="padding: 6px 8px; text-align: right; font-weight: 700; font-size: 13px; color: var(--text);">${p.seats}</td>
@@ -3581,7 +3794,7 @@ function renderDistrictResultsList() {
       districtsRowsHtml += `
         <tr data-fid="${d.fid}" style="border-bottom: 1px solid var(--border-color); transition: background 0.15s ease; cursor: pointer;">
           <td style="text-align: left; padding: 8px; font-weight: 600; font-size: 13px; color: var(--text);">Distrito ${d.district}</td>
-          <td style="text-align: left; padding: 8px; border-left: 4px solid ${winnerColor}; font-size: 13px;">
+          <td style="text-align: left; padding: 8px; border-left: 4px solid ${winnerColor}; font-size: 13px; position: relative;">${d.winner ? partyColorHandle(d.winner) : ''}
             <span style="margin-left: 4px; font-weight: 500;">${cleanWinner}</span>
           </td>
           <td style="text-align: right; padding: 8px; font-size: 12px; font-weight: 600; color: var(--text-sec);">${fmtPct(d.margin)}</td>
@@ -3694,7 +3907,7 @@ function renderDistrictResultsList() {
 
       rowsHtml += `
         <tr style="border-bottom: 1px solid var(--border-color);">
-          <td style="text-align: left; padding: 8px 6px; border-left: 4px solid ${p.color};">
+          <td style="text-align: left; padding: 8px 6px; border-left: 4px solid ${p.color}; position: relative;">${partyColorHandle(p.party)}
             <span style="font-weight: ${p.isWinner ? '700' : '500'}; margin-left: 4px; font-size: 13px;">${p.cleanName}</span>${checkmark}
           </td>
           <td style="padding: 8px 6px; text-align: right; font-weight: 600; font-size: 13px; color: var(--text);">${fmtInt(p.votes)}</td>
@@ -6674,7 +6887,7 @@ function renderMunicipalResultsList() {
         const votePctStr = p.pct.toFixed(1);
         rowsHtml += `
           <tr style="border-bottom:1px solid var(--border-color);transition:background 0.15s; ${p.seats === 0 ? 'opacity:0.55;' : ''}">
-            <td style="text-align:left;padding:8px 6px;border-left:4px solid ${p.color};">
+            <td style="text-align:left;padding:8px 6px;border-left:4px solid ${p.color};position:relative;">${partyColorHandle(p.party)}
               <span style="font-weight:600;margin-left:4px;font-size:13px;">${p.cleanName}</span>
             </td>
             <td style="padding:8px 6px;text-align:right;font-weight:700;font-size:13px;color:var(--text);">${p.seats}</td>
@@ -6748,7 +6961,7 @@ function renderMunicipalResultsList() {
     const votePctStr = p.pct.toFixed(1);
     rowsHtml += `
       <tr style="border-bottom:1px solid var(--border-color);${p.seats === 0 ? 'opacity:0.55;' : ''}">
-        <td style="text-align:left;padding:8px 6px;border-left:4px solid ${p.color};">
+        <td style="text-align:left;padding:8px 6px;border-left:4px solid ${p.color};position:relative;">${partyColorHandle(p.party)}
           <span style="font-weight:600;margin-left:4px;font-size:13px;">${p.cleanName}</span>
         </td>
         <td style="padding:8px 6px;text-align:right;font-weight:700;font-size:13px;color:var(--text);">${p.seats}</td>
@@ -6918,7 +7131,7 @@ function renderResultsList() {
         const votePctStr = p.pct.toFixed(1);
         rowsHtml += `
           <tr style="border-bottom: 1px solid var(--border-color); transition: background 0.15s ease; ${p.seats === 0 ? 'opacity: 0.55;' : ''}">
-            <td style="text-align: left; padding: 8px 6px; border-left: 4px solid ${p.color};">
+            <td style="text-align: left; padding: 8px 6px; border-left: 4px solid ${p.color}; position: relative;">${partyColorHandle(p.party)}
               <span style="font-weight: 600; margin-left: 4px; font-size: 13px;">${p.cleanName}</span>
             </td>
             <td style="padding: 8px 6px; text-align: right; font-weight: 700; font-size: 13px; color: var(--text);">${p.seats}</td>
@@ -6995,6 +7208,8 @@ function renderResultsList() {
         const card = document.createElement('div');
         card.className = 'party-group';
         card.style.borderLeft = `4px solid ${p.color}`;
+        card.style.position = 'relative';
+        card.insertAdjacentHTML('afterbegin', partyColorHandle(p.party));
         card.style.marginBottom = '6px';
         if (p.seats === 0) {
           card.style.opacity = '0.55';
@@ -7153,7 +7368,7 @@ function renderResultsList() {
         const votePctStr = p.pct.toFixed(1);
         rowsHtml += `
           <tr style="border-bottom:1px solid var(--border-color);transition:background 0.15s; ${p.seats === 0 ? 'opacity: 0.55;' : ''}">
-            <td style="text-align:left;padding:8px 6px;border-left:4px solid ${p.color};">
+            <td style="text-align:left;padding:8px 6px;border-left:4px solid ${p.color};position:relative;">${partyColorHandle(p.party)}
               <span style="font-weight:600;margin-left:4px;font-size:13px;">${p.cleanName}</span>
             </td>
             <td style="padding:8px 6px;text-align:right;font-weight:700;font-size:13px;color:var(--text);">${p.seats}</td>
@@ -7256,7 +7471,7 @@ function renderResultsList() {
         const votePctStr = p.pct.toFixed(1);
         rowsHtml += `
           <tr style="border-bottom:1px solid var(--border-color);transition:background 0.15s; ${p.seats === 0 ? 'opacity: 0.55;' : ''}">
-            <td style="text-align:left;padding:8px 6px;border-left:4px solid ${p.color};">
+            <td style="text-align:left;padding:8px 6px;border-left:4px solid ${p.color};position:relative;">${partyColorHandle(p.party)}
               <span style="font-weight:600;margin-left:4px;font-size:13px;">${p.cleanName}</span>
             </td>
             <td style="padding:8px 6px;text-align:right;font-weight:700;font-size:13px;color:var(--text);">${p.seats}</td>
@@ -7336,7 +7551,7 @@ function renderResultsList() {
 
       rowsHtml += `
         <tr style="border-bottom: 1px solid var(--border-color); transition: background 0.15s ease; ${p.seats === 0 ? 'opacity: 0.55;' : ''}">
-          <td style="text-align: left; padding: 8px 6px; border-left: 4px solid ${p.color};">
+          <td style="text-align: left; padding: 8px 6px; border-left: 4px solid ${p.color}; position: relative;">${partyColorHandle(p.party)}
             <span style="font-weight: ${isWinner ? '700' : '500'}; margin-left: 4px; font-size: 13px;">${p.cleanName}</span>${checkmark}
           </td>
           <td style="padding: 8px 6px; text-align: right; font-weight: 700; font-size: 13px; color: var(--text);">${p.seats}</td>
